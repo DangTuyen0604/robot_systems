@@ -15,19 +15,19 @@
 ##### control_pkg: Node nhận lệnh điều khiển và phát xung PWM ra động cơ thực tế
 ##### interfaces_pkg: Đồng bộ định dạng message giao tiếp với Laptop.
 # Yêu cầu môi trường: 
-## Hệ điều hành: Ubuntu 22.04 LTS
-## Môi trường ROS: ROS2 humble
+##### Hệ điều hành: Ubuntu 22.04 LTS
+##### Môi trường ROS: ROS2 humble
 # Hướng dẫn chạy: 
 ## Trên laptop: 
-### Truy cập vào thư mục: cd robot_system/laptop_ws
-### Source môi trường: source install/setup.bash
-### Khởi chạy mô hình: ros2 launch bringup_pkg system_launch.py
+##### Truy cập vào thư mục: cd robot_system/laptop_ws
+##### Source môi trường: source install/setup.bash
+##### Khởi chạy mô hình: ros2 launch bringup_pkg system_launch.py
 ## Trên raspberry:
-### Truy cập vào thư mục: cd robot_system/raspberry_ws
-### Source môi trường: source install/setup.bash
-### Chạy node điều khiển động cơ: ros2 launch control_pkg motor_node
+##### Truy cập vào thư mục: cd robot_system/raspberry_ws
+##### Source môi trường: source install/setup.bash
+##### Chạy node điều khiển động cơ: ros2 launch control_pkg motor_node
 ## chạy mô phỏng:
-### Truy cập vào thư mục: cd robot_system/laptop_ws
-### Source môi trường: source install/setup.bash
-### Khởi chạy mô hình: ros2 launch bringup_pkg system_launch.py
+##### Truy cập vào thư mục: cd robot_system/laptop_ws
+##### Source môi trường: source install/setup.bash
+##### Khởi chạy mô hình: ros2 launch bringup_pkg system_launch.py
 
