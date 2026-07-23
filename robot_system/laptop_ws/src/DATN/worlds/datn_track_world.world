@@ -1,0 +1,149 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <world name="datn_track_world">
+
+    <include><uri>model://sun</uri></include>
+
+    <scene>
+      <ambient>0.8 0.8 0.8 1</ambient>
+      <background>0.8 0.9 1 1</background>
+      <shadows>false</shadows>
+    </scene>
+
+    <physics type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+    </physics>
+
+    <!-- ================= NEN DUONG MAU TRANG ================= -->
+    <model name="ground_white">
+      <static>true</static>
+      <pose>1 1.1 0 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><plane><normal>0 0 1</normal><size>4 5.2</size></plane></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+        <collision name="collision">
+          <geometry><plane><normal>0 0 1</normal><size>4 5.2</size></plane></geometry>
+          <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
+        </collision>
+      </link>
+    </model>
+
+    <!-- ================= DOAN VAO (THANG, TRUC X, dai 1.5m) =================
+         Phuong an B: ca 2 vach cung dung tai x=1.37, doi xung -->
+    <model name="tape_stem_outer">
+      <static>true</static>
+      <pose>0.535 -0.13 0.0015 0 0 0</pose>
+      <link name="link"><visual name="visual">
+        <geometry><box><size>1.67 0.02 0.001</size></box></geometry>
+        <material><ambient>0 0 0 1</ambient><diffuse>0 0 0 1</diffuse><specular>0 0 0 1</specular></material>
+      </visual></link>
+    </model>
+    <model name="tape_stem_inner">
+      <static>true</static>
+      <pose>0.535 0.13 0.0015 0 0 0</pose>
+      <link name="link"><visual name="visual">
+        <geometry><box><size>1.67 0.02 0.001</size></box></geometry>
+        <material><ambient>0 0 0 1</ambient><diffuse>0 0 0 1</diffuse><specular>0 0 0 1</specular></material>
+      </visual></link>
+    </model>
+
+    <!-- ================= NHANH TRAI (XE DI VAO, TRUC Y+, dai 3m) =================
+         Dung dung khop tai diem goc, khong du ra ngoai -->
+    <model name="tape_left_branch_outer">
+      <static>true</static>
+      <pose>1.63 1.585 0.0015 0 0 0</pose>
+      <link name="link"><visual name="visual">
+        <geometry><box><size>0.02 3.43 0.001</size></box></geometry>
+        <material><ambient>0 0 0 1</ambient><diffuse>0 0 0 1</diffuse><specular>0 0 0 1</specular></material>
+      </visual></link>
+    </model>
+    <model name="tape_left_branch_inner">
+      <static>true</static>
+      <pose>1.37 1.715 0.0015 0 0 0</pose>
+      <link name="link"><visual name="visual">
+        <geometry><box><size>0.02 3.17 0.001</size></box></geometry>
+        <material><ambient>0 0 0 1</ambient><diffuse>0 0 0 1</diffuse><specular>0 0 0 1</specular></material>
+      </visual></link>
+    </model>
+
+    <!-- ================= NHANH PHAI (NGO CUT, TRUC Y-, dai 1m, chi de tao hinh chu T) =================
+         KHONG chom qua nhanh trai - dung dung tai ria giao lo, tach biet ro rang -->
+    <model name="tape_right_branch_outer">
+      <static>true</static>
+      <pose>1.63 -0.63 0.0015 0 0 0</pose>
+      <link name="link"><visual name="visual">
+        <geometry><box><size>0.02 1.0 0.001</size></box></geometry>
+        <material><ambient>0 0 0 1</ambient><diffuse>0 0 0 1</diffuse><specular>0 0 0 1</specular></material>
+      </visual></link>
+    </model>
+    <model name="tape_right_branch_inner">
+      <static>true</static>
+      <pose>1.37 -0.63 0.0015 0 0 0</pose>
+      <link name="link"><visual name="visual">
+        <geometry><box><size>0.02 1.0 0.001</size></box></geometry>
+        <material><ambient>0 0 0 1</ambient><diffuse>0 0 0 1</diffuse><specular>0 0 0 1</specular></material>
+      </visual></link>
+    </model>
+
+    <!-- ================= BIEN BAO ================= -->
+
+    <model name="sign_re_trai">
+      <static>true</static>
+      <pose>1.2 -0.35 0 0 0 3.14159</pose>
+      <link name="link">
+        <visual name="pole"><pose>0 0 0.15 0 0 0</pose>
+          <geometry><cylinder><radius>0.008</radius><length>0.3</length></cylinder></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+        <visual name="board"><pose>0 0 0.375 0 0 0</pose>
+          <geometry><box><size>0.02 0.15 0.15</size></box></geometry>
+          <material><ambient>0 0 1 1</ambient><diffuse>0 0 1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="sign_toc_do_20">
+      <static>true</static>
+      <pose>1.85 1.5 0 0 0 -1.5708</pose>
+      <link name="link">
+        <visual name="pole"><pose>0 0 0.15 0 0 0</pose>
+          <geometry><cylinder><radius>0.008</radius><length>0.3</length></cylinder></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+        <visual name="board"><pose>0 0 0.375 0 0 0</pose>
+          <geometry><box><size>0.02 0.15 0.15</size></box></geometry>
+          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="sign_dung_lai">
+      <static>true</static>
+      <pose>1.5 3.2 0 0 0 -1.5708</pose>
+      <link name="link">
+        <visual name="pole"><pose>0 0 0.15 0 0 0</pose>
+          <geometry><cylinder><radius>0.008</radius><length>0.3</length></cylinder></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+        <visual name="board"><pose>0 0 0.375 0 0 0</pose>
+          <geometry><box><size>0.02 0.15 0.15</size></box></geometry>
+          <material><ambient>1 0 0 1</ambient><diffuse>1 0 0 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <gui>
+      <camera name="user_camera">
+        <pose>0 -2 2 0 0.5 1.57</pose>
+      </camera>
+    </gui>
+
+  </world>
+</sdf>

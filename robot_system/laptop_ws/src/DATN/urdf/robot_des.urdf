@@ -1,0 +1,201 @@
+<?xml version="1.0"?>
+<robot name="DATN">
+
+  <!-- 1. THÂN XE CHÍNH (BASE_LINK) -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="-0.0164075 -0.0045815 0.45" rpy="0 0 0" />
+      <mass value="1.566167" />
+      <inertia ixx="0.002201" ixy="0.000031" ixz="0.000026" iyy="0.002613" iyz="-0.000004" izz="0.003153" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/tuyen/colcon_ws/src/DATN/meshes/base_link.STL" />
+      </geometry>
+      <material name="blue">
+        <color rgba="0.79 0.82 0.93 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/tuyen/colcon_ws/src/DATN/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- 2. BÁNH XE TRÁI (LEFT WHEEL) -->
+  <link name="left_Link">
+    <inertial>
+      <origin xyz="-0.000206 -0.00046 0.03652" rpy="0 0 0" />
+      <mass value="0.06756" />
+      <inertia ixx="0.000022" ixy="0.0" ixz="0.0" iyy="0.000022" iyz="0.0" izz="0.000028" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/tuyen/colcon_ws/src/DATN/meshes/left_Link.STL" />
+      </geometry>
+      <material name="gray">
+        <color rgba="0.75 0.75 0.75 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/tuyen/colcon_ws/src/DATN/meshes/left_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="left_join" type="continuous">
+    <origin xyz="-0.11073 0.11121 -0.001" rpy="1.5708 0 -0.0398" />
+    <parent link="base_link" />
+    <child link="left_Link" />
+    <axis xyz="0 0 1" />
+  </joint>
+
+  <!-- 3. BÁNH XE PHẢI (RIGHT WHEEL) - ĐÃ CHUẨN HÓA TRỤC XOAY THẲNG ĐỨNG -->
+  <link name="right_Link">
+    <inertial>
+      <origin xyz="0.001659 0.00046 0.03648" rpy="0 0 0" />
+      <mass value="0.06756" />
+      <inertia ixx="0.000022" ixy="0.0" ixz="0.0" iyy="0.000022" iyz="0.0" izz="0.000028" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/tuyen/colcon_ws/src/DATN/meshes/right_Link.STL" />
+      </geometry>
+      <material name="gray">
+        <color rgba="0.75 0.75 0.75 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/tuyen/colcon_ws/src/DATN/meshes/right_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="right_join" type="continuous">
+    <origin xyz="-0.11923 -0.10212 -0.001" rpy="-1.5708 0 0" />
+    <parent link="base_link" />
+    <child link="right_Link" />
+    <axis xyz="0 0 1" /> <!-- ĐÃ ĐỔI TỪ TRỤC LỆCH THÀNH TRỤC CHUẨN ĐỂ KHÔNG BỊ CRASH VẬT LÝ -->
+  </joint>
+
+  <!-- 4. BÁNH XE TỰ DO (FREE_LINK) -->
+  <link name="free_Link">
+    <inertial>
+      <origin xyz="-0.007525 0 0.01297" rpy="0 0 0" />
+      <mass value="0.00685" />
+      <inertia ixx="4.35E-07" ixy="0.0" ixz="0.0" iyy="6.04E-07" iyz="0.0" izz="4.15E-07" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/tuyen/colcon_ws/src/DATN/meshes/free_Link.STL" />
+      </geometry>
+      <material name="white">
+        <color rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/tuyen/colcon_ws/src/DATN/meshes/free_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="free_join" type="fixed">
+    <origin xyz="0.033141 -0.0013757 -0.005" rpy="-3.1416 0 -0.0398" />
+    <parent link="base_link" />
+    <child link="free_Link" />
+  </joint>
+
+  <!-- 5. ĐỊNH NGHĨA MA SÁT CHO GAZEBO -->
+  <gazebo reference="left_Link">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <kp>1000000.0</kp>
+    <kd>100.0</kd>
+  </gazebo>
+  <gazebo reference="right_Link">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <kp>1000000.0</kp>
+    <kd>100.0</kd>
+  </gazebo>
+  <gazebo reference="free_Link">
+    <mu1>0.01</mu1>
+    <mu2>0.01</mu2>
+  </gazebo>
+
+  <!-- 5b. MÀU SẮC CHO GAZEBO (rgba trong <material> của URDF không được Gazebo Classic áp dụng cho mesh) -->
+  <gazebo reference="base_link">
+    <material>Gazebo/Blue</material>
+  </gazebo>
+  <gazebo reference="left_Link">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+  <gazebo reference="right_Link">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+  <gazebo reference="free_Link">
+    <material>Gazebo/White</material>
+  </gazebo>
+
+  <!-- 6. GAZEBO ROS 2 DIFFERENTIAL DRIVE PLUGIN -->
+  <gazebo>
+    <plugin name="diff_drive" filename="libgazebo_ros_diff_drive.so">
+      <num_wheel_pairs>1</num_wheel_pairs>
+      <left_joint>left_join</left_joint>
+      <right_joint>right_join</right_joint>
+      <wheel_separation>0.213</wheel_separation>
+      <wheel_diameter>0.065</wheel_diameter>
+      <max_wheel_torque>15</max_wheel_torque>
+      <max_wheel_acceleration>1.0</max_wheel_acceleration>
+      <odometry_frame>odom</odometry_frame>
+      <robot_base_frame>base_link</robot_base_frame>
+      <publish_odom>true</publish_odom>
+      <publish_odom_tf>true</publish_odom_tf>
+      <publish_wheel_tf>true</publish_wheel_tf>
+    </plugin>
+  </gazebo>
+
+  <!-- 7. CAMERA - khop calibration that trong traffic_sign_node.py -->
+  <!-- CAMERA_PARAMS that: f=530px, h=0.26m, alpha=35 (cui xuong/pitch), tai anh goc 320x240 -->
+  <gazebo reference="base_link">
+    <sensor type="camera" name="camera_sensor">
+      <!-- pose: x y z roll pitch yaw -->
+      <!-- pitch = 0.6109 rad (~35 do) cui xuong, KHONG phai roll -->
+      <!-- CHINH x,y,z cho khop vi tri camera that neu can -->
+      <pose>0.03 0 0.27 0 0.6109 0</pose>
+      <update_rate>20.0</update_rate> <!-- khop timer camera_node.py (1/20.0s) -->
+      <camera name="head">
+        <horizontal_fov>0.5864</horizontal_fov> <!-- khop fx=530px @ width=320 -->
+        <image>
+          <width>320</width>   <!-- khop CAP_PROP_FRAME_WIDTH that -->
+          <height>240</height> <!-- khop CAP_PROP_FRAME_HEIGHT that -->
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.02</near>
+          <far>300</far>
+        </clip>
+      </camera>
+      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+        <ros>
+          <namespace>/camera</namespace>
+        </ros>
+        <camera_name>camera</camera_name>
+        <frame_name>base_link</frame_name>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+</robot>
