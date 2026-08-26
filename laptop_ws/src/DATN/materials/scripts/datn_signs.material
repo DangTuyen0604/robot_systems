@@ -1,0 +1,62 @@
+material DATN/SignTurnLeft
+{
+  technique
+  {
+    pass
+    {
+      lighting off
+      scene_blend alpha_blend
+      alpha_rejection greater 128
+      cull_hardware none
+      cull_software none
+      texture_unit
+      {
+        texture turn_left.png
+        filtering anisotropic
+        max_anisotropy 8
+      }
+    }
+  }
+}
+
+material DATN/SignSpeedLimit20
+{
+  technique
+  {
+    pass
+    {
+      lighting off
+      scene_blend alpha_blend
+      alpha_rejection greater 128
+      cull_hardware none
+      cull_software none
+      texture_unit
+      {
+        texture speed_limit_20.png
+        filtering anisotropic
+        max_anisotropy 8
+      }
+    }
+  }
+}
+
+material DATN/SignStop
+{
+  technique
+  {
+    pass
+    {
+      lighting off
+      scene_blend alpha_blend
+      alpha_rejection greater 128
+      cull_hardware none
+      cull_software none
+      texture_unit
+      {
+        texture stop.png
+        filtering anisotropic
+        max_anisotropy 8
+      }
+    }
+  }
+}

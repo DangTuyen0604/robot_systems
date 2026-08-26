@@ -1,0 +1,9 @@
+# Python 3.10, used by ROS 2 Humble on Ubuntu 22.04.
+# NumPy stays below 2.x to remain compatible with Humble cv_bridge binaries.
+--extra-index-url https://download.pytorch.org/whl/cpu
+numpy==1.26.4
+opencv-python==4.8.1.78
+torch==2.2.2+cpu
+torchvision==0.17.2+cpu
+ultralytics==8.2.103  # YOLOv8 production sign model
+onnxruntime==1.17.3

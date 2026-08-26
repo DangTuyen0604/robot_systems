@@ -1,0 +1,14 @@
+**/build/
+**/install/
+**/log/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.colcon/
+.venv/
+
+# Keep production model locations documented; store large weights with Git LFS.
+*.pt
+*.pth
+*.onnx
+*.onnx.data

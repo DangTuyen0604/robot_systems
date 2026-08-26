@@ -1,0 +1,48 @@
+command_mux:
+  ros__parameters:
+    initial_mode: AUTO
+    command_timeout: 0.3
+    publish_period: 0.05
+
+sim_motor_bridge_node:
+  ros__parameters:
+    command_timeout: 0.3
+    max_linear_speed: 0.3
+    max_angular_speed: 1.5
+
+lane_node_instance:
+  ros__parameters:
+    lost_lane_recovery_enabled: true
+    lost_lane_recovery_frames: 10
+    lost_lane_recovery_max_frames: 30
+    lost_lane_recovery_steering: -25.0
+    lost_lane_recovery_speed: 0.22
+
+sign_node_instance:
+  ros__parameters:
+    imgsz: 320
+    sign_conf: 0.5
+    light_conf: 0.8
+    process_every_n_frames: 2
+    confirm_frames: 3
+    publish_image: false
+    # The current Gazebo world has traffic signs but no traffic lights. The
+    # sign detector is YOLOv8; disabling the separate YOLO11 light model keeps
+    # the simulation dependency set small and avoids unnecessary inference.
+    enable_light_model: false
+    sign_model_file: yolov8n.onnx
+    camera_f: 265.0
+    camera_dy: 1.0
+    camera_h: 0.26
+    camera_alpha: 35.0
+    camera_v0: 120.0
+
+decision_node_instance:
+  ros__parameters:
+    lane_timeout: 0.3
+    sign_timeout: 1.2
+    stop_duration: 5.0
+    slow_duration: 5.0
+    sign_confirm_count: 10
+    approach_duration: 15.0
+    turn_duration: 3.0
