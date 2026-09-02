@@ -242,6 +242,12 @@ Trước khi chạy robot thật, cần xác nhận toàn bộ trường hợp s
   lại sau khi biến mất.
 - Hiển thị đèn đỏ: xe phải dừng cho đến khi đèn xanh được xác nhận.
 
+## Video demo
+
+- [Demo xe chạy mô phỏng (Gazebo)](https://drive.google.com/file/d/1dBT1ogTiThg2gMlb9Enwx0kLMsxEHvZB/view?usp=drive_link)
+- [Demo xe chạy phần cứng](https://drive.google.com/file/d/1XgVCvXy4kMGLnkwK37TSTM-VURQFna5z/view?usp=sharing)
+- [Trang tổng hợp video demo](docs/demo/README.md)
+
 ## Kết quả đánh giá
 
 ### Độ chính xác nhận diện (mAP)
