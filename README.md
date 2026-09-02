@@ -242,6 +242,29 @@ Trước khi chạy robot thật, cần xác nhận toàn bộ trường hợp s
   lại sau khi biến mất.
 - Hiển thị đèn đỏ: xe phải dừng cho đến khi đèn xanh được xác nhận.
 
+## Kết quả đánh giá
+
+### Độ chính xác nhận diện (mAP)
+
+Ảnh bên dưới dành cho kết quả đánh giá mô hình trên tập kiểm thử, chẳng hạn
+mAP50 và mAP50-95. Ảnh kết quả được lưu tại
+[`docs/results/map-result.png`](docs/results/map-result.png).
+
+<p align="center">
+  <img src="docs/results/map-result.png" alt="Kết quả đánh giá mAP của mô hình" width="800">
+</p>
+
+### Tốc độ xử lý (FPS)
+
+Ảnh bên dưới dành cho kết quả đo FPS trên phần cứng triển khai. Khi cập nhật kết
+quả, nên ghi rõ thiết bị, backend, kích thước đầu vào và số lần chạy để phép đo có
+thể tái lập. Ảnh kết quả được lưu tại
+[`docs/results/fps-result.png`](docs/results/fps-result.png).
+
+<p align="center">
+  <img src="docs/results/fps-result.png" alt="Kết quả đo tốc độ xử lý FPS" width="800">
+</p>
+
 ## Giới hạn hiện tại và hướng phát triển
 
 - Model artifact được lưu bên ngoài repository và chưa có script tải tự động.
