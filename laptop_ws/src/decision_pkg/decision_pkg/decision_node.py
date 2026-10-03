@@ -10,7 +10,9 @@ from interfaces_pkg.msg import Control
 STOP_LABELS  = {'red_light', 'stop'}
 SLOW_LABELS  = {'yellow_light', 'slow_down', 'speed_limit_20'}
 LEFT_LABELS  = {'turn_left'}
-RIGHT_LABELS = {'no_right_turn'}
+# The track has no right-turn sign. 'no_right_turn' means "do not turn right"
+# and must never arm a right turn.
+RIGHT_LABELS = set()
 
 
 class TurnBehaviorNode(Node):
@@ -32,7 +34,8 @@ class TurnBehaviorNode(Node):
         self.declare_parameter('approach_speed',     0.18)  # tốc độ tiếp cận giao lộ
         self.declare_parameter('turn_speed',         0.22)
         self.declare_parameter('min_speed',          0.0)
-        self.declare_parameter('slow_speed',         0.03)
+        self.declare_parameter('slow_speed',         0.03)  # tốc độ tối thiểu khi tiếp cận giao lộ
+        self.declare_parameter('sign_slow_speed',    0.18)  # tốc độ khi gặp biển 20 km/h
         self.declare_parameter('turn_cooldown',      2.0)
         self.declare_parameter('stop_duration',      5.0)
         self.declare_parameter('slow_duration',      5.0)
@@ -61,6 +64,7 @@ class TurnBehaviorNode(Node):
         self.turn_speed        = float(self.get_parameter('turn_speed').value)
         self.min_speed         = float(self.get_parameter('min_speed').value)
         self.slow_speed        = float(self.get_parameter('slow_speed').value)
+        self.sign_slow_speed   = float(self.get_parameter('sign_slow_speed').value)
         self.turn_cooldown     = float(self.get_parameter('turn_cooldown').value)
         self.stop_duration     = float(self.get_parameter('stop_duration').value)
         self.slow_duration     = float(self.get_parameter('slow_duration').value)
@@ -323,7 +327,10 @@ class TurnBehaviorNode(Node):
         elif self.sign_action == 'slowing':
             elapsed = now - self.sign_action_start
             if elapsed < self.slow_duration:
-                return self.build_cmd(self.slow_speed, steering, 'SLOW')
+                # Never exceed the lane follower's speed: it is 0 when the
+                # lane is lost, and a speed sign must not override that stop.
+                speed = min(self.lane_speed, self.sign_slow_speed)
+                return self.build_cmd(speed, steering, 'SLOW')
             self.sign_action       = None
             self.sign_action_start = None
             self.sign_action_label = None

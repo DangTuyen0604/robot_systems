@@ -15,6 +15,10 @@ import torch
 from ament_index_python.packages import get_package_share_directory
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
+from perception_pkg.sign_labels import (
+    ACTIVE_SIGN_LABELS, build_class_map, pick_detection)
+
+# Fallback only: used when the loaded model carries no usable class names.
 SIGN_CLASSES = {
     0: 'no_right_turn',
     1: 'slow_down',
@@ -128,6 +132,24 @@ class TrafficSignNode(Node):
             self.get_logger().error(f'Failed to load model: {e}')
             raise
 
+        try:
+            sign_model_names = self.sign_model.names
+        except Exception as e:
+            self.get_logger().warn(f'Cannot read sign model class names: {e}')
+            sign_model_names = None
+        self.sign_class_map, source = build_class_map(
+            sign_model_names, SIGN_CLASSES, ACTIVE_SIGN_LABELS)
+        self.get_logger().info(
+            f'Sign classes from {source}: {self.sign_class_map} '
+            f'(model names: {sign_model_names})')
+        if source == 'fallback':
+            self.get_logger().warn(
+                'Sign model names do not match any active label; using the '
+                'hard-coded SIGN_CLASSES order. Verify it against the model.')
+        missing = ACTIVE_SIGN_LABELS - set(self.sign_class_map.values())
+        if missing:
+            self.get_logger().warn(f'Sign model cannot detect: {sorted(missing)}')
+
         self.label_pub = self.create_publisher(String,  '/perception/detected_label', 10)
         self.dist_pub  = self.create_publisher(Float32, '/perception/sign_distance',  10)
 
@@ -157,20 +179,13 @@ class TrafficSignNode(Node):
         if boxes is None or len(boxes) == 0:
             return 'none', 0.0, None
 
-        confs     = boxes.conf.cpu().numpy()
-        best_idx  = int(np.argmax(confs))
-        best_conf = float(confs[best_idx])
-
-        if best_conf < conf_threshold:
-            return 'none', 0.0, None
-
-        best_cls = int(boxes.cls.cpu().numpy()[best_idx])
-        label    = class_map.get(best_cls, 'unknown')
-
-        xyxy     = boxes.xyxy.cpu().numpy()[best_idx]
-        y_bottom = float(xyxy[3])
-
-        return label, best_conf, y_bottom
+        return pick_detection(
+            boxes.cls.cpu().numpy(),
+            boxes.conf.cpu().numpy(),
+            boxes.xyxy.cpu().numpy()[:, 3],
+            class_map,
+            conf_threshold,
+        )
 
     def compute_distance(self, v_pixel: float) -> float:
         alpha_rad = math.radians(self.cam_alpha)
@@ -208,7 +223,7 @@ class TrafficSignNode(Node):
                 frame, imgsz=self.imgsz, verbose=False, device=self.device)
 
         sign_label, sign_conf, sign_v = self.decode_yolo_ultralytics(
-            sign_results, SIGN_CLASSES, self.sign_conf
+            sign_results, self.sign_class_map, self.sign_conf
         )
         light_label, light_conf, light_v = self.decode_yolo_ultralytics(
             light_results, LIGHT_CLASSES, self.light_conf

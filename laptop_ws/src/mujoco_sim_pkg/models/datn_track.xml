@@ -1,0 +1,275 @@
+<!--
+  MuJoCo version of DATN/worlds/datn_track_world.world and DATN/urdf/robot_des.urdf.
+
+  Poses and sizes are copied from the Gazebo files, so both simulators use the
+  same world frame: the robot starts at the origin facing +X, inside the
+  straight stem of the T-junction.
+
+  Files named here (sign textures, STL meshes) are not stored in this package.
+  mujoco_sim_pkg.scene supplies them from the DATN package at load time.
+-->
+<mujoco model="datn_track">
+  <!-- URDF rpy is extrinsic X-Y-Z, i.e. MuJoCo eulerseq "XYZ". -->
+  <compiler angle="radian" eulerseq="XYZ" inertiafromgeom="false"/>
+
+  <option timestep="0.002" integrator="implicitfast"/>
+
+  <visual>
+    <global offwidth="1280" offheight="720" azimuth="-135" elevation="-32"/>
+    <headlight ambient="0.26 0.26 0.26" diffuse="0.08 0.08 0.08" specular="0 0 0"/>
+    <!-- offsamples also anti-aliases the robot camera, like a real lens. -->
+    <quality shadowsize="4096" offsamples="4"/>
+    <map haze="0.25" shadowclip="2" znear="0.01"/>
+    <rgba haze="0.86 0.9 0.95 1"/>
+  </visual>
+
+  <!-- Default viewer framing: the whole track. -->
+  <statistic center="1 1.1 0.2" extent="3.5"/>
+
+  <default>
+    <!-- Visual-only geometry: never collides. -->
+    <default class="visual">
+      <geom contype="0" conaffinity="0"/>
+    </default>
+    <default class="tape">
+      <geom type="box" contype="0" conaffinity="0" material="tape"/>
+    </default>
+    <!-- Sign assembly, in the sign body frame. The face is the same
+         0.16 x 0.16 m board as in Gazebo, with its front at local x = 0.004;
+         a metal plate, a post behind it and a weighted base are added. -->
+    <default class="sign">
+      <geom contype="0" conaffinity="0"/>
+      <default class="sign_face">
+        <geom type="box" size="0.0005 0.08 0.08" pos="0.0035 0 0.11"/>
+      </default>
+      <default class="sign_plate">
+        <geom type="box" size="0.003 0.083 0.083" pos="0 0 0.11" material="metal"/>
+      </default>
+      <default class="sign_post">
+        <geom type="cylinder" size="0.006 0.095" pos="-0.009 0 0.095" material="metal"/>
+      </default>
+      <default class="sign_base">
+        <geom type="cylinder" size="0.035 0.004" pos="-0.009 0 0.004" material="base"/>
+      </default>
+    </default>
+    <default class="cone">
+      <geom contype="0" conaffinity="0"/>
+      <default class="cone_body">
+        <geom type="mesh" mesh="cone_body" material="cone_orange"/>
+      </default>
+      <default class="cone_band">
+        <geom type="mesh" mesh="cone_band" material="cone_white"/>
+      </default>
+      <default class="cone_foot">
+        <geom type="box" size="0.085 0.085 0.015" pos="0 0 0.015" material="cone_orange"/>
+      </default>
+    </default>
+    <default class="furniture">
+      <geom contype="0" conaffinity="0"/>
+    </default>
+  </default>
+
+  <asset>
+    <texture name="sky" type="skybox" builtin="gradient"
+             rgb1="0.86 0.9 0.95" rgb2="0.62 0.72 0.85" width="256" height="256"/>
+
+    <!-- Room floor: light concrete tiles, 0.5 m, with pale grout. -->
+    <texture name="tiles" type="2d" builtin="checker" width="512" height="512"
+             rgb1="0.76 0.76 0.74" rgb2="0.72 0.72 0.70" mark="edge" markrgb="0.84 0.84 0.82"
+             random="0.03"/>
+    <material name="room_floor" texture="tiles" texrepeat="1 1" texuniform="true"
+              specular="0.15" shininess="0.3" reflectance="0.04"/>
+
+    <!-- Track mat: matte off-white vinyl with fine speckle. It stays far
+         above the lane threshold (grey < 100) so only the tape reads as lane. -->
+    <texture name="vinyl" type="2d" builtin="flat" width="256" height="256"
+             rgb1="0.95 0.95 0.93" mark="random" markrgb="0.84 0.84 0.82" random="0.04"/>
+    <material name="mat" texture="vinyl" texrepeat="2 2" texuniform="true" specular="0.05"/>
+    <!-- Printed border: kept light (grey ~130) so it never looks like tape. -->
+    <material name="mat_border" rgba="0.36 0.56 0.82 1" specular="0.05"/>
+
+    <material name="tape" rgba="0.03 0.03 0.03 1" specular="0.08" shininess="0.2"/>
+    <texture name="start_checker" type="2d" builtin="checker" width="64" height="64"
+             rgb1="0.03 0.03 0.03" rgb2="0.95 0.95 0.93"/>
+    <material name="start_line" texture="start_checker" texrepeat="1 6"/>
+
+    <texture name="turn_left" type="2d" file="turn_left.png"/>
+    <texture name="speed_limit_20" type="2d" file="speed_limit_20.png"/>
+    <texture name="stop" type="2d" file="stop.png"/>
+    <!-- Retro-reflective sign faces: emission keeps them bright like the
+         "lighting off" Gazebo material. -->
+    <material name="turn_left" texture="turn_left" emission="0.6" specular="0"/>
+    <material name="speed_limit_20" texture="speed_limit_20" emission="0.6" specular="0"/>
+    <material name="stop" texture="stop" emission="0.6" specular="0"/>
+    <material name="metal" rgba="0.62 0.64 0.66 1" specular="0.6" shininess="0.6"/>
+    <material name="base" rgba="0.58 0.58 0.58 1" specular="0.2"/>
+
+    <material name="cone_orange" rgba="1 0.42 0.05 1" specular="0.3" shininess="0.4"/>
+    <material name="cone_white" rgba="0.96 0.96 0.96 1" specular="0.4" emission="0.15"/>
+    <mesh name="cone_body" vertex="0.0750 0.0000 0.030  0.0713 0.0232 0.030  0.0607 0.0441 0.030  0.0441 0.0607 0.030  0.0232 0.0713 0.030  0.0000 0.0750 0.030  -0.0232 0.0713 0.030  -0.0441 0.0607 0.030  -0.0607 0.0441 0.030  -0.0713 0.0232 0.030  -0.0750 0.0000 0.030  -0.0713 -0.0232 0.030  -0.0607 -0.0441 0.030  -0.0441 -0.0607 0.030  -0.0232 -0.0713 0.030  -0.0000 -0.0750 0.030  0.0232 -0.0713 0.030  0.0441 -0.0607 0.030  0.0607 -0.0441 0.030  0.0713 -0.0232 0.030  0.0120 0.0000 0.300  0.0114 0.0037 0.300  0.0097 0.0071 0.300  0.0071 0.0097 0.300  0.0037 0.0114 0.300  0.0000 0.0120 0.300  -0.0037 0.0114 0.300  -0.0071 0.0097 0.300  -0.0097 0.0071 0.300  -0.0114 0.0037 0.300  -0.0120 0.0000 0.300  -0.0114 -0.0037 0.300  -0.0097 -0.0071 0.300  -0.0071 -0.0097 0.300  -0.0037 -0.0114 0.300  -0.0000 -0.0120 0.300  0.0037 -0.0114 0.300  0.0071 -0.0097 0.300  0.0097 -0.0071 0.300  0.0114 -0.0037 0.300" inertia="shell"/>
+    <mesh name="cone_band" vertex="0.0508 0.0000 0.140  0.0483 0.0157 0.140  0.0411 0.0299 0.140  0.0299 0.0411 0.140  0.0157 0.0483 0.140  0.0000 0.0508 0.140  -0.0157 0.0483 0.140  -0.0299 0.0411 0.140  -0.0411 0.0299 0.140  -0.0483 0.0157 0.140  -0.0508 0.0000 0.140  -0.0483 -0.0157 0.140  -0.0411 -0.0299 0.140  -0.0299 -0.0411 0.140  -0.0157 -0.0483 0.140  -0.0000 -0.0508 0.140  0.0157 -0.0483 0.140  0.0299 -0.0411 0.140  0.0411 -0.0299 0.140  0.0483 -0.0157 0.140  0.0368 0.0000 0.200  0.0350 0.0114 0.200  0.0298 0.0217 0.200  0.0217 0.0298 0.200  0.0114 0.0350 0.200  0.0000 0.0368 0.200  -0.0114 0.0350 0.200  -0.0217 0.0298 0.200  -0.0298 0.0217 0.200  -0.0350 0.0114 0.200  -0.0368 0.0000 0.200  -0.0350 -0.0114 0.200  -0.0298 -0.0217 0.200  -0.0217 -0.0298 0.200  -0.0114 -0.0350 0.200  -0.0000 -0.0368 0.200  0.0114 -0.0350 0.200  0.0217 -0.0298 0.200  0.0298 -0.0217 0.200  0.0350 -0.0114 0.200" inertia="shell"/>
+
+    <material name="wood" rgba="0.62 0.47 0.32 1" specular="0.2" shininess="0.3"/>
+    <material name="steel" rgba="0.25 0.26 0.28 1" specular="0.5" shininess="0.5"/>
+    <material name="laptop" rgba="0.18 0.19 0.21 1" specular="0.4"/>
+    <material name="screen" rgba="0.15 0.3 0.45 1" emission="0.5"/>
+    <material name="cardboard" rgba="0.74 0.57 0.37 1" specular="0.05"/>
+
+    <mesh name="base_link" file="base_link.STL" inertia="shell"/>
+    <mesh name="left_Link" file="left_Link.STL" inertia="shell"/>
+    <mesh name="right_Link" file="right_Link.STL" inertia="shell"/>
+    <mesh name="free_Link" file="free_Link.STL" inertia="shell"/>
+  </asset>
+
+  <worldbody>
+    <!-- Indoor lighting: two ceiling lamps over the track cast soft shadows,
+         a weak directional fill keeps shadowed areas bright. -->
+    <light name="lamp_stem" pos="0.6 0 3" dir="0 0 -1" cutoff="75" exponent="2"
+           diffuse="0.36 0.36 0.34" specular="0.15 0.15 0.15" castshadow="true"/>
+    <light name="lamp_branch" pos="1.5 2.2 3" dir="0 0 -1" cutoff="75" exponent="2"
+           diffuse="0.36 0.36 0.34" specular="0.15 0.15 0.15" castshadow="true"/>
+    <light name="fill" directional="true" castshadow="false"
+           pos="0 0 10" dir="-0.5 0.1 -0.9" diffuse="0.22 0.22 0.22" specular="0 0 0"/>
+
+    <!-- Room floor. This plane is the only collision surface. -->
+    <geom name="ground" type="plane" pos="1 1.1 0" size="6 6 0.1" material="room_floor"
+          friction="1 0.005 0.0001"/>
+
+    <!-- Track mat 4 x 5.2 m (the Gazebo road surface) with a printed border. -->
+    <geom name="mat" class="visual" type="box" pos="1 1.1 0.0004" size="2 2.6 0.0004"
+          material="mat"/>
+    <geom name="mat_border_s" class="visual" type="box" pos="1 -1.475 0.0009" size="2 0.025 0.0001" material="mat_border"/>
+    <geom name="mat_border_n" class="visual" type="box" pos="1 3.675 0.0009" size="2 0.025 0.0001" material="mat_border"/>
+    <geom name="mat_border_w" class="visual" type="box" pos="-0.975 1.1 0.0009" size="0.025 2.6 0.0001" material="mat_border"/>
+    <geom name="mat_border_e" class="visual" type="box" pos="2.975 1.1 0.0009" size="0.025 2.6 0.0001" material="mat_border"/>
+
+    <!-- Black tape, 2 cm wide. Straight stem along +X. -->
+    <geom name="tape_stem_outer" class="tape" pos="0.535 -0.13 0.0015" size="0.835 0.01 0.0005"/>
+    <geom name="tape_stem_inner" class="tape" pos="0.535 0.13 0.0015" size="0.835 0.01 0.0005"/>
+    <!-- Left branch along +Y, the route after the junction. -->
+    <geom name="tape_left_branch_outer" class="tape" pos="1.63 1.585 0.0015" size="0.01 1.715 0.0005"/>
+    <geom name="tape_left_branch_inner" class="tape" pos="1.37 1.715 0.0015" size="0.01 1.585 0.0005"/>
+    <!-- Right branch along -Y: a short dead end that forms the T. -->
+    <geom name="tape_right_branch_outer" class="tape" pos="1.63 -0.63 0.0015" size="0.01 0.5 0.0005"/>
+    <geom name="tape_right_branch_inner" class="tape" pos="1.37 -0.63 0.0015" size="0.01 0.5 0.0005"/>
+
+    <!-- Chequered start line behind the robot's start pose (never in view
+         of its camera). -->
+    <geom name="start_line" class="visual" type="box" pos="-0.26 0 0.0015" size="0.02 0.12 0.0005"
+          material="start_line"/>
+
+    <!-- Turn-left sign 0.20 m right of the lane centre. At 0.30 m it is never
+         whole in the 62 deg camera view while large enough for the 320 px
+         detector, so the turn was never armed; see DATN world. -->
+    <body name="sign_re_trai" pos="1.2 -0.20 0" euler="0 0 3.14159" childclass="sign">
+      <geom class="sign_face" material="turn_left"/>
+      <geom class="sign_plate"/>
+      <geom class="sign_post"/>
+      <geom class="sign_base"/>
+    </body>
+    <body name="sign_toc_do_20" pos="1.80 1.5 0" euler="0 0 -1.5708" childclass="sign">
+      <geom class="sign_face" material="speed_limit_20"/>
+      <geom class="sign_plate"/>
+      <geom class="sign_post"/>
+      <geom class="sign_base"/>
+    </body>
+    <body name="sign_dung_lai" pos="1.80 3.2 0" euler="0 0 -1.5708" childclass="sign">
+      <geom class="sign_face" material="stop"/>
+      <geom class="sign_plate"/>
+      <geom class="sign_post"/>
+      <geom class="sign_base"/>
+    </body>
+
+    <!-- Traffic cones closing the dead-end right branch and the end of the
+         route. Their shaded side is close to the lane threshold, so they
+         stand off the mat, outside the lane ROI (0.18-0.40 m ahead of the
+         camera) at every pose the robot reaches. -->
+    <body name="cone_right_1" pos="1.42 -1.28 0" childclass="cone">
+      <geom class="cone_foot"/><geom class="cone_body"/><geom class="cone_band"/>
+    </body>
+    <body name="cone_right_2" pos="1.58 -1.28 0" euler="0 0 0.4" childclass="cone">
+      <geom class="cone_foot"/><geom class="cone_body"/><geom class="cone_band"/>
+    </body>
+    <body name="cone_end_1" pos="1.42 3.86 0" euler="0 0 0.2" childclass="cone">
+      <geom class="cone_foot"/><geom class="cone_body"/><geom class="cone_band"/>
+    </body>
+    <body name="cone_end_2" pos="1.58 3.86 0" euler="0 0 -0.3" childclass="cone">
+      <geom class="cone_foot"/><geom class="cone_body"/><geom class="cone_band"/>
+    </body>
+
+    <!-- Workbench with the control laptop, beside the start area. -->
+    <body name="workbench" pos="-0.4 -2.1 0" childclass="furniture">
+      <geom type="box" size="0.7 0.35 0.02" pos="0 0 0.74" material="wood"/>
+      <geom type="box" size="0.02 0.02 0.36" pos="0.65 0.3 0.36" material="steel"/>
+      <geom type="box" size="0.02 0.02 0.36" pos="-0.65 0.3 0.36" material="steel"/>
+      <geom type="box" size="0.02 0.02 0.36" pos="0.65 -0.3 0.36" material="steel"/>
+      <geom type="box" size="0.02 0.02 0.36" pos="-0.65 -0.3 0.36" material="steel"/>
+      <geom type="box" size="0.17 0.12 0.008" pos="0.1 0.05 0.768" euler="0 0 0.2" material="laptop"/>
+      <geom type="box" size="0.17 0.006 0.11" pos="0.135 -0.07 0.87" euler="-0.25 0 0.2" material="laptop"/>
+      <geom type="box" size="0.155 0.002 0.095" pos="0.137 -0.062 0.872" euler="-0.25 0 0.2" material="screen"/>
+      <geom type="box" size="0.12 0.09 0.06" pos="-0.45 0.1 0.82" euler="0 0 -0.3" material="cardboard"/>
+    </body>
+
+    <!-- Spare boxes stacked off the mat. -->
+    <body name="boxes" pos="3.6 -0.6 0" childclass="furniture">
+      <geom type="box" size="0.22 0.18 0.16" pos="0 0 0.16" material="cardboard"/>
+      <geom type="box" size="0.18 0.15 0.12" pos="0.03 -0.02 0.44" euler="0 0 0.3" material="cardboard"/>
+      <geom type="box" size="0.2 0.16 0.14" pos="0.05 0.45 0.14" euler="0 0 -0.2" material="cardboard"/>
+    </body>
+
+    <!-- Robot. base_link rests 0.035 m above the ground: the wheel axles sit
+         1 mm below it and the wheels have a 0.034 m radius. -->
+    <body name="base_link" pos="0 0 0.036">
+      <freejoint name="root"/>
+      <!-- URDF puts the COM 0.45 m above the chassis, which is not physical
+           for this robot; a low COM is used instead. -->
+      <inertial pos="-0.016 -0.005 0.05" mass="1.566167"
+                diaginertia="0.002201 0.002613 0.003153"/>
+      <geom name="base_visual" class="visual" type="mesh" mesh="base_link"
+            rgba="0.79 0.82 0.93 1"/>
+
+      <!-- Passive caster (URDF free_join), modelled as a low-friction sphere.
+           MuJoCo otherwise uses the larger friction of the two contacting
+           geoms (the ground's), and the caster would brake the robot;
+           priority makes its own friction win. -->
+      <geom name="caster_visual" class="visual" type="mesh" mesh="free_Link"
+            pos="0.033141 -0.0013757 -0.005" euler="-3.1416 0 -0.0398" rgba="1 1 1 1"/>
+      <geom name="caster" type="sphere" size="0.012" pos="0.028 -0.0014 -0.023" priority="1"
+            friction="0.01 0.005 0.0001" rgba="1 1 1 0"/>
+
+      <!-- Camera: same mount as the Gazebo sensor (x 0.03, z 0.27, pitch 35 deg
+           down) and the same 320x240 intrinsics (fx = fy = 265 px). MuJoCo
+           cameras look along -Z with +Y up. -->
+      <camera name="front_camera" pos="0.03 0 0.27"
+              xyaxes="0 -1 0 0.573576 0 0.819152" fovy="48.721"/>
+
+      <!-- Wheels. Both hinge axes are +Y, so positive speed drives forward,
+           matching the Gazebo diff-drive convention. -->
+      <body name="left_Link" pos="-0.11073 0.11121 -0.001">
+        <joint name="left_join" type="hinge" axis="0 1 0" armature="0.0005" damping="0.0005"/>
+        <inertial pos="0 0 0" mass="0.06756" diaginertia="0.000022 0.000028 0.000022"/>
+        <geom name="left_visual" class="visual" type="mesh" mesh="left_Link"
+              euler="1.5708 0 -0.0398" rgba="0.75 0.75 0.75 1"/>
+        <geom name="left_wheel" type="cylinder" size="0.034 0.0125" euler="1.5708 0 0"
+              friction="1 0.005 0.0001" rgba="0.2 0.2 0.2 0"/>
+      </body>
+      <body name="right_Link" pos="-0.11923 -0.10212 -0.001">
+        <joint name="right_join" type="hinge" axis="0 1 0" armature="0.0005" damping="0.0005"/>
+        <inertial pos="0 0 0" mass="0.06756" diaginertia="0.000022 0.000028 0.000022"/>
+        <geom name="right_visual" class="visual" type="mesh" mesh="right_Link"
+              euler="-1.5708 0 0" rgba="0.75 0.75 0.75 1"/>
+        <geom name="right_wheel" type="cylinder" size="0.034 0.0125" euler="1.5708 0 0"
+              friction="1 0.005 0.0001" rgba="0.2 0.2 0.2 0"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <!-- Wheel speed servos in rad/s. Torque limit is generous for a 1.7 kg
+         robot but finite, like max_wheel_torque in the Gazebo plugin. -->
+    <velocity name="left_motor" joint="left_join" kv="0.5"
+              ctrlrange="-30 30" forcerange="-2 2"/>
+    <velocity name="right_motor" joint="right_join" kv="0.5"
+              ctrlrange="-30 30" forcerange="-2 2"/>
+  </actuator>
+</mujoco>

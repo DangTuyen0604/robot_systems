@@ -7,3 +7,5 @@ torch==2.2.2+cpu
 torchvision==0.17.2+cpu
 ultralytics==8.2.103  # YOLOv8 production sign model
 onnxruntime==1.17.3
+onnx==1.16.2  # Ultralytics reads ONNX model metadata with it
+mujoco==3.14.0  # mujoco_sim_pkg simulator

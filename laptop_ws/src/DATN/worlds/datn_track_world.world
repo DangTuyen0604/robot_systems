@@ -94,9 +94,12 @@
 
     <!-- ================= BIEN BAO ================= -->
 
+    <!-- 0.20 m right of the lane centre: at 0.30 m the sign is either cut by
+         the camera frame or too small for the 320 px detector, and the turn
+         is never armed. -->
     <model name="sign_re_trai">
       <static>true</static>
-      <pose>1.2 -0.30 0 0 0 3.14159</pose>
+      <pose>1.2 -0.20 0 0 0 3.14159</pose>
       <link name="link">
         <visual name="pole"><pose>0 0 0.015 0 0 0</pose>
           <geometry><cylinder><radius>0.008</radius><length>0.03</length></cylinder></geometry>

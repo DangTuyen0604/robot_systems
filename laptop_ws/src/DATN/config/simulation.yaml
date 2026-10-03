@@ -43,6 +43,12 @@ decision_node_instance:
     sign_timeout: 1.2
     stop_duration: 5.0
     slow_duration: 5.0
+    sign_slow_speed: 0.18
     sign_confirm_count: 10
     approach_duration: 15.0
     turn_duration: 3.0
+    # Keep lane speed while a sign-armed turn approaches the T-junction. At
+    # the default 0.18 the lane follower locks onto the dead-end right
+    # branch, the junction is never seen as NO LANE, and the turn starts
+    # only at the 15 s approach timeout, in the wrong place.
+    approach_speed: 0.32
