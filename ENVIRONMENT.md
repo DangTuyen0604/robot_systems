@@ -41,9 +41,15 @@ python -m pip install -r requirements-laptop.txt
 source /opt/ros/humble/setup.bash
 cd laptop_ws
 rosdep install --from-paths src --ignore-src -r -y
-colcon build --symlink-install
+# Run colcon with the venv interpreter so ROS entry points use it and can
+# import the venv packages; plain `colcon` binds them to /usr/bin/python3.
+python -m colcon build --symlink-install
 source install/setup.bash
 ```
+
+If `python3 -m venv` fails because `ensurepip` is missing and `python3-venv`
+cannot be installed, create the venv with `--without-pip` and install pip into
+it from the official pip wheel.
 
 The pinned Torch package is the CPU-compatible PyPI build. For NVIDIA CUDA,
 install the matching Torch wheel from the official PyTorch index first, then
@@ -126,7 +132,7 @@ Build outputs are intentionally ignored and may be regenerated:
 ```bash
 cd laptop_ws
 rm -rf build install log
-colcon build --symlink-install
+python -m colcon build --symlink-install  # with .venv activated
 ```
 
 Repeat in `raspberry_ws`. Never run the cleanup command from an unresolved path.

@@ -1,0 +1,16 @@
+mujoco_sim_node:
+  ros__parameters:
+    real_time_factor: 1.0
+    tick_period: 0.01
+    # Same camera stream as the Gazebo sensor and the real camera_node.
+    camera_rate: 20.0
+    camera_width: 320
+    camera_height: 240
+    jpeg_quality: 80
+    image_topic: /raw_image/compressed
+    odom_rate: 50.0
+    # Differential drive, matching the Gazebo plugin.
+    wheel_radius: 0.034
+    wheel_separation: 0.2133
+    max_wheel_acceleration: 1.0
+    command_timeout: 0.5

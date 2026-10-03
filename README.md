@@ -16,8 +16,8 @@ Arduino.
 - Phát hiện vạch đường bằng OpenCV và duy trì bám làn khi chỉ thấy một bên vạch.
 - Chạy mô hình nhận diện biển báo YOLOv8 tùy chỉnh bằng ONNX Runtime để inference
   ổn định trên CPU trong mô phỏng.
-- Xử lý các biển STOP, giới hạn tốc độ, giảm tốc và rẽ bằng node hành vi có trạng
-  thái.
+- Xử lý ba biển báo trên sa hình — rẽ trái, tốc độ tối đa 20 km/h và dừng lại —
+  bằng node hành vi có trạng thái. Các class khác của detector bị bỏ qua.
 - Xác nhận kết quả qua nhiều frame để hạn chế false positive đơn lẻ.
 - Hỗ trợ ba chế độ `ESTOP`, `MANUAL` và `AUTO` thông qua command mux riêng.
 - Dừng khi dữ liệu perception hoặc điều khiển quá hạn bằng các watchdog 300 ms
@@ -53,6 +53,7 @@ Gazebo có giới hạn.
 robot_system/
 ├── laptop_ws/src/
 │   ├── DATN/                 # World Gazebo, URDF, launch và cấu hình mô phỏng
+│   ├── mujoco_sim_pkg/       # Mô phỏng cùng sa hình và robot bằng MuJoCo
 │   ├── perception_pkg/       # Nhận diện làn đường và biển báo
 │   ├── decision_pkg/         # Hành vi, teleop, mux và simulation bridge
 │   ├── interfaces_pkg/       # Message Control tùy chỉnh
@@ -121,12 +122,18 @@ từ một bản clone mới.
 
 ```bash
 source /opt/ros/humble/setup.bash
+source .venv/bin/activate
 cd laptop_ws
 rosdep install --from-paths src --ignore-src -r -y
-colcon build --symlink-install
+python -m colcon build --symlink-install
 source install/setup.bash
 ros2 launch DATN sim_full_launch.py
 ```
+
+Chạy colcon bằng `python -m colcon` từ venv: các node Python khi đó dùng
+`.venv/bin/python` và thấy được Torch, Ultralytics, ONNX Runtime và MuJoCo.
+Lệnh `colcon` thông thường gắn node với `/usr/bin/python3`, nên các thư viện
+trong venv sẽ không được tìm thấy khi chạy node.
 
 Chạy không có giao diện Gazebo và cửa sổ ảnh debug:
 
@@ -144,6 +151,55 @@ ros2 launch DATN sim_full_launch.py initial_mode:=ESTOP
 Các tham số như kích thước inference, confidence, vận tốc tối đa, watchdog và
 tìm lại làn được tập trung trong
 [`simulation.yaml`](laptop_ws/src/DATN/config/simulation.yaml).
+
+### Mô phỏng bằng MuJoCo
+
+`mujoco_sim_pkg` thay Gazebo bằng MuJoCo nhưng giữ nguyên sa hình, robot và
+toàn bộ pipeline perception → decision → mux → bridge.
+
+<p align="center">
+  <img src="docs/mujoco/map-topdown.jpg" alt="Sa hình MuJoCo nhìn từ trên xuống" width="800">
+</p>
+<p align="center">
+  <img src="docs/mujoco/chase-stem.jpg" alt="Robot tiến tới ngã ba với biển rẽ trái" width="395">
+  <img src="docs/mujoco/chase-branch.jpg" alt="Robot ở nhánh trái với biển tốc độ 20 và STOP" width="395">
+</p>
+
+Sa hình giữ đúng kích thước và vị trí vạch, biển của world Gazebo, nhưng được
+dựng giống phòng lab thật: thảm vinyl có vân và viền, băng dính đen, biển báo
+có mặt kim loại, cột và đế, cọc tiêu chặn nhánh cụt và cuối đường, bàn làm việc,
+đèn trần có bóng đổ. Mọi chi tiết đều được giữ sáng hơn ngưỡng nhận vạch
+(grey < 100) để chỉ băng dính được nhận là làn đường. Node `mujoco_sim_node`
+nhận `/cmd_vel` giống plugin diff-drive của Gazebo, render camera 320x240 @ 20 FPS
+(cùng vị trí gắn và tiêu cự 265 px) rồi publish thẳng `/raw_image/compressed`,
+kèm `/odom` là vị trí thật của robot để đánh giá sai số bám làn.
+
+MuJoCo được cài bằng pip (đã có trong `requirements-laptop.txt`), không cần
+Gazebo. Sau khi build workspace như trên:
+
+```bash
+ros2 launch mujoco_sim_pkg mujoco_full_launch.py
+```
+
+Các tùy chọn:
+
+| Tham số | Mặc định | Ý nghĩa |
+|---|---|---|
+| `gui` | `true` | Mở cửa sổ viewer của MuJoCo |
+| `signs` | `true` | Chạy node YOLO nhận diện biển báo (cần file model) |
+| `initial_mode` | `AUTO` | Chế độ khởi động của command mux |
+| `show_debug` | `false` | Mở `rqt_image_view` |
+
+Ví dụ chạy không giao diện và chưa có model nhận diện:
+
+```bash
+ros2 launch mujoco_sim_pkg mujoco_full_launch.py gui:=false signs:=false
+```
+
+Camera được render offscreen bằng EGL (`MUJOCO_GL=egl` mặc định). Trên máy không
+có EGL, đặt `MUJOCO_GL=osmesa` trước khi launch. Thông số vật lý và camera nằm
+trong [`mujoco_sim.yaml`](laptop_ws/src/mujoco_sim_pkg/config/mujoco_sim.yaml)
+và [`datn_track.xml`](laptop_ws/src/mujoco_sim_pkg/models/datn_track.xml).
 
 ## Thiết kế điều khiển và an toàn
 
@@ -280,7 +336,8 @@ thể tái lập. Ảnh kết quả được lưu tại
 - Repository chưa công bố độ chính xác detector, inference latency, sai số bám
   làn hoặc tỷ lệ hoàn thành qua nhiều lượt chạy.
 - Các scenario Gazebo end-to-end hiện vẫn được kiểm tra thủ công.
-- Dự án sử dụng Gazebo Classic 11 để phù hợp với ROS 2 Humble.
+- Dự án sử dụng Gazebo Classic 11 để phù hợp với ROS 2 Humble. Gazebo Classic
+  đã ngừng hỗ trợ từ 01/2025; mô phỏng MuJoCo là phương án thay thế.
 
 Các kết quả dự kiến bổ sung cho portfolio gồm precision/recall và mAP của
 detector, ONNX latency, sai số tâm làn, tỷ lệ hoàn thành mô phỏng qua nhiều lượt
@@ -288,5 +345,5 @@ và thời gian từ khi xảy ra lỗi đến khi xe dừng.
 
 ## Công nghệ sử dụng
 
-ROS 2 Humble · Python · Gazebo Classic · OpenCV · YOLOv8 · ONNX Runtime ·
+ROS 2 Humble · Python · Gazebo Classic · MuJoCo · OpenCV · YOLOv8 · ONNX Runtime ·
 PyTorch · NumPy · Raspberry Pi · Arduino · Serial · DDS
