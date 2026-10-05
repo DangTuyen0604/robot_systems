@@ -19,6 +19,9 @@ def generate_launch_description():
         get_package_share_directory('DATN'), 'config', 'simulation.yaml')
     mujoco_config = os.path.join(
         get_package_share_directory('mujoco_sim_pkg'), 'config', 'mujoco_sim.yaml')
+    # MuJoCo stamps images with wall time, so stale-image rejection can stay
+    # on as on the real robot.
+    perception_overrides = {'max_image_age': 0.5}
 
     return LaunchDescription([
 
@@ -66,7 +69,7 @@ def generate_launch_description():
             executable='lane_detection_node',
             name='lane_node_instance',
             output='screen',
-            parameters=[simulation_config]
+            parameters=[simulation_config, perception_overrides]
         ),
 
         Node(
@@ -74,7 +77,7 @@ def generate_launch_description():
             executable='traffic_sign_node',
             name='sign_node_instance',
             output='screen',
-            parameters=[simulation_config],
+            parameters=[simulation_config, perception_overrides],
             condition=IfCondition(signs),
         ),
 

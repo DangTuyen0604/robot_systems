@@ -5,10 +5,11 @@ Nguyên mẫu xe tự hành phân tán kết hợp **ROS 2**, **Gazebo**, **Open
 thực thi hành vi lái và bảo vệ an toàn nhiều tầng trên laptop, Raspberry Pi và
 Arduino.
 
-> **Trạng thái dự án:** toàn bộ workspace trên laptop đã build thành công và bộ
-> kiểm thử an toàn trọng tâm đã vượt qua. Trọng số mô hình được lưu bên ngoài Git
-> và cần được cung cấp trước khi chạy perception. Dự án chưa công bố benchmark
-> end-to-end.
+> **Trạng thái dự án:** cả hai workspace build và vượt qua unit test, lint và
+> kiểm thử kịch bản end-to-end trong MuJoCo (CI trên GitHub Actions). Số liệu
+> bám làn, xử lý biển báo và tốc độ perception trong mô phỏng nằm ở
+> [Kết quả đánh giá](#kết-quả-đánh-giá); hệ thống trên xe thật chưa được đo lại
+> sau các thay đổi gần nhất.
 
 ## Điểm nổi bật
 
@@ -57,12 +58,16 @@ robot_system/
 │   ├── perception_pkg/       # Nhận diện làn đường và biển báo
 │   ├── decision_pkg/         # Hành vi, teleop, mux và simulation bridge
 │   ├── interfaces_pkg/       # Message Control tùy chỉnh
-│   ├── visualization_pkg/    # Hiển thị trạng thái khi chạy
 │   └── bringup_pkg/          # Launch laptop cho robot thật
 ├── raspberry_ws/src/
 │   ├── camera_pkg/           # Xuất bản ảnh camera
 │   ├── control_pkg/          # Giao tiếp serial động cơ và watchdog
 │   └── interfaces_pkg/       # Message Control dùng chung
+├── firmware/code_xe/         # Sketch Arduino: PID lái, PWM động cơ, watchdog 500 ms
+├── scripts/fetch_models.py   # Tải trọng số detector và kiểm tra SHA-256
+├── tests/                    # Kiểm tra nhất quán giữa các workspace và firmware
+├── docs/results/             # Số liệu đánh giá mô phỏng và perception
+├── .github/workflows/ci.yml  # Build, test, lint và kịch bản MuJoCo trên CI
 ├── requirements-laptop.txt
 ├── requirements-raspberry.txt
 └── ENVIRONMENT.md
@@ -94,29 +99,17 @@ python -m pip install -r requirements-laptop.txt
 
 ### 2. Cung cấp mô hình nhận diện
 
-Các file mô hình được chủ động loại khỏi Git. Để chạy mô phỏng, đặt mô hình đã
-export tại:
-
-```text
-laptop_ws/src/perception_pkg/perception_pkg/yolov8n.onnx
-```
-
-SHA-256 dự kiến:
-
-```text
-6bd6b0deb7671c10754cd7df8b85fb43689f9830435a2c7d8cc9353980b2b026
-```
-
-Kiểm tra file trước khi build:
+Trọng số không nằm trong Git mà ở
+[GitHub Release `models-v1`](https://github.com/DangTuyen0604/robot_systems/releases/tag/models-v1).
+Script sau tải `yolov8n.onnx` (mô phỏng) và `viet.pt` (xe thật) vào
+`laptop_ws/src/perception_pkg/perception_pkg/` và kiểm tra SHA-256:
 
 ```bash
-sha256sum laptop_ws/src/perception_pkg/perception_pkg/yolov8n.onnx
+python3 scripts/fetch_models.py
 ```
 
-Checksum, checkpoint PyTorch và lưu ý tương thích được mô tả tại phần
-[mô hình production](ENVIRONMENT.md#production-models). Repository hiện chưa có
-script tải công khai, vì vậy cần có quyền truy cập model artifact để triển khai
-từ một bản clone mới.
+Checksum và lưu ý tương thích được mô tả tại phần
+[mô hình production](ENVIRONMENT.md#production-models).
 
 ### 3. Build và khởi chạy
 
@@ -238,7 +231,7 @@ Các tầng fail-safe:
 | Command mux | Lệnh được chọn cũ quá 300 ms | Từ chối lệnh và publish dừng |
 | Simulation bridge | `/control/cmd` cũ quá 300 ms | Publish `/cmd_vel` bằng 0 |
 | Motor node trên Raspberry Pi | `/control/cmd` quá hạn | Gửi lệnh dừng |
-| Hợp đồng firmware Arduino | Không có packet serial hợp lệ trong 500 ms | Đặt PWM động cơ bằng 0 |
+| Firmware Arduino ([`code_xe.ino`](firmware/code_xe/code_xe.ino)) | Không có packet `V:..;E:..` hợp lệ trong 500 ms | Đặt PWM động cơ bằng 0 |
 
 Trong mô phỏng, quá trình tìm lại làn bắt đầu sau 10 frame không thấy làn và bị
 dừng sau 30 frame nếu chưa tìm lại được. Các cơ chế dừng bằng phần mềm không thay
@@ -249,7 +242,7 @@ thế mạch emergency stop vật lý thường đóng.
 | Topic | Kiểu dữ liệu | Mục đích |
 |---|---|---|
 | `/raw_image/compressed` | `sensor_msgs/CompressedImage` | Ảnh đầu vào từ camera |
-| `/perception/detected_label` | `std_msgs/String` | Nhãn biển báo/đèn đã xác nhận |
+| `/perception/detected_label` | `std_msgs/String` | Nhãn biển báo đã xác nhận |
 | `/perception/sign_distance` | `std_msgs/Float32` | Khoảng cách ước lượng đến biển |
 | `/control/lane_suggest` | `interfaces_pkg/Control` | Gợi ý điều khiển bám làn |
 | `/control/auto` | `interfaces_pkg/Control` | Đầu ra quyết định tự hành |
@@ -259,32 +252,58 @@ thế mạch emergency stop vật lý thường đóng.
 | `/control/mux_status` | `std_msgs/String` | Chế độ hiện tại hoặc trạng thái timeout |
 | `/diagnostics/decision` | `std_msgs/String` | Chẩn đoán trạng thái hành vi |
 | `/diagnostics/sim_motor` | `std_msgs/String` | Chẩn đoán simulation bridge |
+| `/arduino/pid` | `std_msgs/String` | Chỉnh PID `KS:<p>;KSI:<i>;KSD:<d>` (lái) hoặc `P:<p>;I:<i>;D:<d>` (tốc độ) khi xe đứng yên |
+| `/arduino/telemetry` | `std_msgs/String` | Mọi dòng Arduino gửi về, gồm debug 10 Hz có số xung encoder |
+
+### Firmware Arduino
+
+[`firmware/code_xe/code_xe.ino`](firmware/code_xe/code_xe.ino) nhận lệnh
+`V:<pwm 0..255>;E:<sai số pixel>` từ `motor_node`, tính PID lái và xuất PWM
+cho hai động cơ. Mở thư mục `firmware/code_xe` bằng Arduino IDE để nạp.
+
+- `motor_node` chỉ chuyển xuống Arduino gói chỉnh PID đúng định dạng
+  `KS:..;KSI:..;KSD:..` hoặc `P:..;I:..;D:..` khi xe đang được lệnh đứng yên;
+  gói chứa lệnh chạy bị chặn để không đi vòng qua command mux. Firmware bỏ dòng
+  dài hơn 32 ký tự.
+- PID tốc độ dùng encoder là tùy chọn (`USE_SPEED_PID`, mặc định 0 = PWM vòng
+  hở như trước). Chỉ bật sau khi encoder đếm đúng và đã đo lại
+  `MAX_PULSES_PER_INTERVAL` trên xe.
+- Encoder trái/phải nối chân 12 và 4. Trên Uno/Nano (ATmega328P) firmware đếm
+  bằng ngắt đổi trạng thái chân (pin-change), vì `attachInterrupt()` chỉ hoạt
+  động ở chân 2 và 3. Board khác sẽ in cảnh báo nếu chân không có ngắt.
+- `MIN_PWM` (65) là ngưỡng động cơ bắt đầu quay: mọi lệnh chạy được nâng lên ít
+  nhất mức này. Dùng số xung `EL`/`ER` trên `/arduino/telemetry` để đo tốc độ
+  bánh theo PWM trước khi chỉnh ngưỡng hoặc tốc độ chậm.
 
 ## Kiểm thử
 
-Quá trình kiểm tra build thành công cho cả sáu package trong laptop workspace.
-Chạy bộ kiểm thử hồi quy cho an toàn và cấu hình mô phỏng bằng:
+Mỗi package có unit test và lint của ament (flake8, pep257, xmllint, lint_cmake):
 
 ```bash
-source /opt/ros/humble/setup.bash
-source laptop_ws/install/setup.bash
-python3 -m pytest -q \
-  laptop_ws/src/decision_pkg/test/test_control_safety.py \
-  laptop_ws/src/DATN/test/test_simulation_configuration.py
+source /opt/ros/humble/setup.bash && source .venv/bin/activate
+cd laptop_ws && source install/setup.bash
+python -m colcon test && python -m colcon test-result --verbose
+cd ../raspberry_ws && python -m colcon build && python -m colcon test   # tương tự
+cd .. && python -m pytest tests   # interfaces_pkg hai bản giống nhau, giao thức khớp firmware
 ```
 
-Bộ kiểm thử trọng tâm hiện có tám test đều vượt qua, bao gồm:
+Các nhóm test chính:
 
-- `ESTOP` không bao giờ chuyển tiếp lệnh;
-- lệnh cũ hoặc bị thiếu luôn bị từ chối;
-- chỉ lệnh mới của chế độ đang chọn được chuyển tiếp;
-- vận tốc và góc lái mô phỏng luôn nằm trong giới hạn;
-- simulation bridge nhận đầu ra từ mux, không đi tắt qua mux;
-- timeout an toàn và quá trình tìm lại làn có giới hạn được cấu hình đúng.
+- **An toàn điều khiển:** `ESTOP` không chuyển lệnh, lệnh cũ hoặc thiếu bị từ
+  chối, vận tốc mô phỏng bị giới hạn, bridge chỉ nhận đầu ra của mux.
+- **Hành vi biển báo:** chỉ ba biển đang dùng được thực hiện, biển 20 km/h không
+  chạy khi mất làn, `cam_re_phai` không bao giờ kích hoạt rẽ phải.
+- **Serial:** `/arduino/pid` chỉ nhận gói PID đúng định dạng khi xe đứng yên;
+  gói chạy luôn nằm trong giới hạn mà firmware chấp nhận.
+- **Mô phỏng:** robot MuJoCo đứng cân bằng, đi thẳng, quay đúng chiều; camera có
+  cùng tiêu cự với Gazebo.
+- **Kịch bản end-to-end** (`mujoco_sim_pkg/test/test_scenario.py`): toàn bộ hệ
+  thống chạy trên sa hình MuJoCo và phải giữ làn, rẽ đúng nhánh trái, đi chậm ở
+  biển 20, dừng ở biển STOP và tới cuối đường. Chạy với `MUJOCO_SCENARIO=1`,
+  khoảng 1 phút mỗi kịch bản.
 
-Đây là unit test và static regression test, chưa thay thế được kiểm thử scenario
-trong Gazebo. Việc sửa lint cho toàn workspace và đánh giá mô phỏng end-to-end
-tự động vẫn đang được thực hiện.
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) chạy toàn bộ các bước
+trên trong container `ros:humble` cho mỗi push và pull request.
 
 ## Kiểm tra chèn lỗi bắt buộc
 
@@ -296,7 +315,6 @@ Trước khi chạy robot thật, cần xác nhận toàn bộ trường hợp s
 - Kết nối lại serial: xe vẫn đứng yên cho đến khi nhận được lệnh mới.
 - Giữ biển STOP trước camera: biển chỉ kích hoạt một lần và chỉ được kích hoạt
   lại sau khi biến mất.
-- Hiển thị đèn đỏ: xe phải dừng cho đến khi đèn xanh được xác nhận.
 
 ## Video demo
 
@@ -306,22 +324,51 @@ Trước khi chạy robot thật, cần xác nhận toàn bộ trường hợp s
 
 ## Kết quả đánh giá
 
+### Kịch bản mô phỏng MuJoCo
+
+5 lượt chạy toàn bộ hệ thống (YOLOv8 ONNX 320 px, real-time) trên sa hình chữ T,
+mỗi lượt tới khi xe dừng ở cuối đường. Sai số đo từ vị trí thật (`/odom`) của
+`base_link` tới tâm làn. Chi tiết từng lượt:
+[`docs/results/mujoco_evaluation.md`](docs/results/mujoco_evaluation.md).
+
+| Chỉ số | Kết quả |
+|---|---|
+| Hoàn thành tuyến (giữ làn, rẽ trái đúng nhánh, tới cuối đường) | 5/5 |
+| Thời gian hoàn thành | 52,5 ± 2,4 s |
+| Sai số tâm làn đoạn thẳng: trung bình / lớn nhất | 1,0 / 11,0 mm |
+| Sai số tâm làn nhánh trái: trung bình / lớn nhất | 5,4 / 34,8 mm |
+| Đi chậm ở biển 20 km/h | 5,0 s (cấu hình 5 s) |
+| Dừng ở biển STOP | 4,9 s (cấu hình 5 s) |
+
+Sai số lớn nhất ở nhánh trái xuất hiện ngay sau khúc rẽ, khi xe bắt lại làn.
+Tái lập bằng `ros2 run mujoco_sim_pkg evaluate --runs 5`.
+
+### Tốc độ xử lý perception
+
+Đo trên Intel Core i7-9850H, chỉ CPU, 200 ảnh camera 320x240, từng ảnh một như
+trong node ROS ([chi tiết](docs/results/perception_benchmark.md); tái lập bằng
+`ros2 run perception_pkg benchmark`).
+
+| Bước | Trung bình | p95 | Tối đa |
+|---|---|---|---|
+| Bám làn (OpenCV) + điều khiển | 4,8 ms | 5,1 ms | ~210 FPS |
+| Biển báo `yolov8n.onnx` 320 px (mô phỏng) | 23,5 ms | 30,0 ms | ~42 FPS |
+| Biển báo `viet.pt` 640 px (xe thật) | 50,2 ms | 51,9 ms | ~20 FPS |
+
+Node biển báo xử lý 1/2 số ảnh của camera 20 FPS, nên mỗi lần suy luận có 100 ms;
+cả hai model đều nằm trong giới hạn này trên CPU.
+
 ### Độ chính xác nhận diện (mAP)
 
-Ảnh bên dưới dành cho kết quả đánh giá mô hình trên tập kiểm thử, chẳng hạn
-mAP50 và mAP50-95. Ảnh kết quả được lưu tại
-[`docs/results/map-result.png`](docs/results/map-result.png).
+Kết quả đánh giá detector trên tập kiểm thử:
 
 <p align="center">
   <img src="docs/results/map-result.png" alt="Kết quả đánh giá mAP của mô hình" width="800">
 </p>
 
-### Tốc độ xử lý (FPS)
+### FPS trên phần cứng
 
-Ảnh bên dưới dành cho kết quả đo FPS trên phần cứng triển khai. Khi cập nhật kết
-quả, nên ghi rõ thiết bị, backend, kích thước đầu vào và số lần chạy để phép đo có
-thể tái lập. Ảnh kết quả được lưu tại
-[`docs/results/fps-result.png`](docs/results/fps-result.png).
+Kết quả đo FPS trên phần cứng triển khai:
 
 <p align="center">
   <img src="docs/results/fps-result.png" alt="Kết quả đo tốc độ xử lý FPS" width="800">
@@ -329,19 +376,24 @@ thể tái lập. Ảnh kết quả được lưu tại
 
 ## Giới hạn hiện tại và hướng phát triển
 
-- Model artifact được lưu bên ngoài repository và chưa có script tải tự động.
-- Gazebo world hiện có biển báo nhưng chưa có đèn giao thông.
-- Nhận diện làn dùng threshold và contour của OpenCV, được tinh chỉnh cho góc
-  camera và hình dạng đường hiện tại.
-- Repository chưa công bố độ chính xác detector, inference latency, sai số bám
-  làn hoặc tỷ lệ hoàn thành qua nhiều lượt chạy.
-- Các scenario Gazebo end-to-end hiện vẫn được kiểm tra thủ công.
+- Hệ thống chỉ nhận diện ba biển báo (rẽ trái, tốc độ tối đa 20 km/h, dừng
+  lại); không có model đèn giao thông.
+- Nhận diện làn dùng threshold và contour của OpenCV. Mọi ngưỡng là tham số ROS
+  của `lane_node_instance` (xem `perception_pkg/lane_detector.py`) và cần chỉnh
+  lại theo ánh sáng của sa hình thật.
+- Logic ngã ba dành cho sa hình chữ T hiện tại: decision node coi việc mất làn
+  sau khi thấy biển rẽ là đã tới giao lộ, và chế độ tìm làn của mô phỏng luôn
+  rẽ trái. Một sa hình khác cần cơ chế nhận diện giao lộ riêng.
+- Node làn và node biển bỏ ảnh cũ hơn 0,5 s theo thời điểm chụp
+  (`max_image_age`), nên đồng hồ Raspberry Pi và laptop phải được đồng bộ.
+- Số liệu bám làn và hoàn thành kịch bản hiện chỉ có trong mô phỏng MuJoCo; xe
+  thật cần được đo bằng cùng chỉ số.
 - Dự án sử dụng Gazebo Classic 11 để phù hợp với ROS 2 Humble. Gazebo Classic
   đã ngừng hỗ trợ từ 01/2025; mô phỏng MuJoCo là phương án thay thế.
 
-Các kết quả dự kiến bổ sung cho portfolio gồm precision/recall và mAP của
-detector, ONNX latency, sai số tâm làn, tỷ lệ hoàn thành mô phỏng qua nhiều lượt
-và thời gian từ khi xảy ra lỗi đến khi xe dừng.
+Các số liệu nên bổ sung tiếp: tốc độ bánh theo PWM (`ros2 run control_pkg
+encoder_rate` trên xe), sai số bám làn trên sa hình thật và thời gian từ khi xảy
+ra lỗi đến khi xe dừng.
 
 ## Công nghệ sử dụng
 

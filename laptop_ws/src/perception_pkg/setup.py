@@ -1,5 +1,5 @@
 from setuptools import find_packages, setup
-import os          
+import os
 from glob import glob
 package_name = 'perception_pkg'
 
@@ -19,9 +19,9 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='tuyen',
-    maintainer_email='tuyen@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer_email='nguyendangtuyen062004@gmail.com',
+    description='Lane detection (OpenCV) and traffic-sign detection (YOLOv8 via ONNX Runtime)',
+    license='Apache-2.0',
     extras_require={
         'test': [
             'pytest',
@@ -31,6 +31,7 @@ setup(
         'console_scripts': [
             'lane_detection_node =perception_pkg.lane_detection_node:main',
             'traffic_sign_node = perception_pkg.traffic_sign_node:main',
+            'benchmark = perception_pkg.benchmark:main',
         ],
     },
 )

@@ -19,9 +19,9 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='tuyen',
-    maintainer_email='tuyen@todo.todo',
+    maintainer_email='nguyendangtuyen062004@gmail.com',
     description='MuJoCo simulation of the DATN track and robot',
-    license='TODO: License declaration',
+    license='Apache-2.0',
     extras_require={
         'test': [
             'pytest',
@@ -30,6 +30,7 @@ setup(
     entry_points={
         'console_scripts': [
             'mujoco_sim_node = mujoco_sim_pkg.mujoco_sim_node:main',
+            'evaluate = mujoco_sim_pkg.evaluate:main',
         ],
     },
 )

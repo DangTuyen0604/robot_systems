@@ -3,9 +3,9 @@
 <package format="3">
   <name>DATN</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="tuyen@todo.todo">tuyen</maintainer>
-  <license>TODO: License declaration</license>
+  <description>Gazebo Classic world, robot URDF and launch files of the DATN track</description>
+  <maintainer email="nguyendangtuyen062004@gmail.com">tuyen</maintainer>
+  <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

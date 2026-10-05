@@ -7,13 +7,13 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
 
+
 def generate_launch_description():
     gui = LaunchConfiguration('gui')
-    
+
     package_name = 'DATN'
     urdf_file_name = 'robot_des.urdf'
 
-    
     urdf_path = os.path.join(get_package_share_directory(package_name), 'urdf', urdf_file_name)
     package_share = get_package_share_directory(package_name)
 
@@ -29,11 +29,9 @@ def generate_launch_description():
         value=gazebo_resource_path,
     )
 
-    
     with open(urdf_path, 'r') as infp:
         robot_desc = infp.read()
 
-   
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -41,8 +39,8 @@ def generate_launch_description():
         parameters=[{'robot_description': robot_desc, 'use_sim_time': True}]
     )
 
-    
-    world_path = os.path.join(get_package_share_directory(package_name), 'worlds', 'datn_track_world.world')
+    world_path = os.path.join(
+        get_package_share_directory(package_name), 'worlds', 'datn_track_world.world')
 
     gazebo_ros_dir = get_package_share_directory('gazebo_ros')
     gazebo_launch = IncludeLaunchDescription(
@@ -52,7 +50,6 @@ def generate_launch_description():
         launch_arguments={'world': world_path, 'gui': gui}.items()
     )
 
-    
     spawn_robot_node = Node(
         package='gazebo_ros',
         executable='spawn_entity.py',
@@ -60,7 +57,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    
     return LaunchDescription([
         DeclareLaunchArgument(
             'gui', default_value='true',

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-import rclpy
 from rclpy.node import Node
 from interfaces_pkg.msg import Control
 from geometry_msgs.msg import Twist
 from std_msgs.msg import String
+
+from decision_pkg.shutdown import spin_then_stop
 
 MAX_LINEAR_SPEED = 0.3
 MAX_STEERING_DEG = 45.0
@@ -79,17 +80,10 @@ class SimMotorBridge(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
-    node = SimMotorBridge()
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.publish_stop('STOP:BRIDGE_SHUTDOWN')
-        node.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
+    spin_then_stop(
+        SimMotorBridge,
+        lambda node: node.publish_stop('STOP:BRIDGE_SHUTDOWN'),
+        args=args)
 
 
 if __name__ == '__main__':

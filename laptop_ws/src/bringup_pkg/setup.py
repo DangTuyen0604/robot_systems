@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
-import os # THÊM DÒNG NÀY
-from glob import glob # THÊM DÒNG NÀY
-from setuptools import setup
+import os
+from glob import glob
+
 package_name = 'bringup_pkg'
 
 setup(
@@ -17,9 +17,9 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='tuyen',
-    maintainer_email='tuyen@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer_email='nguyendangtuyen062004@gmail.com',
+    description='Laptop launch files for the real robot',
+    license='Apache-2.0',
     extras_require={
         'test': [
             'pytest',
@@ -27,7 +27,6 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'system_launch = bringup_pkg.system_launch:main',
         ],
     },
 )

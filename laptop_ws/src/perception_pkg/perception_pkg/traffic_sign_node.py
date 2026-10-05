@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-import rclpy
 from rclpy.node import Node
+from rclpy.time import Time
 
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import String, Float32
-from cv_bridge import CvBridge
 
 import cv2
 import os
@@ -15,6 +14,7 @@ import torch
 from ament_index_python.packages import get_package_share_directory
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
+from perception_pkg.node_runner import image_age, run_node
 from perception_pkg.sign_labels import (
     ACTIVE_SIGN_LABELS, build_class_map, pick_detection)
 
@@ -27,33 +27,21 @@ SIGN_CLASSES = {
     4: 'speed_limit_20',
 }
 
-LIGHT_CLASSES = {
-    0: 'red_light',
-    1: 'yellow_light',
-    2: 'green_light',
-}
-
 CLASS_DISPLAY_MAP = {
     'no_right_turn':   'NO RIGHT TURN',
     'slow_down':        'SLOW DOWN',
     'stop':              'STOP',
     'turn_left':         'TURN LEFT',
     'speed_limit_20':    'SPEED LIMIT 20',
-    'red_light':         'RED LIGHT',
-    'yellow_light':      'YELLOW LIGHT',
-    'green_light':       'GREEN LIGHT',
     'none':              'NO SIGN DETECTED'
 }
 
 DEFAULT_SIGN_CONF = 0.5
-DEFAULT_LIGHT_CONF = 0.5
 
 # ✅ All these labels execute IMMEDIATELY upon detection.
 # Distance is not used for them since the small test-track camera
 # gives inaccurate distance estimates.
-IMMEDIATE_LABELS = {
-    'stop', 'red_light', 'yellow_light', 'speed_limit_20', 'turn_left',
-}
+IMMEDIATE_LABELS = {'stop', 'speed_limit_20', 'turn_left'}
 
 CAMERA_PARAMS = {
     'f':     530.0,
@@ -71,51 +59,43 @@ class TrafficSignNode(Node):
     def __init__(self):
         super().__init__('sign_node_instance')
 
-        self.bridge = CvBridge()
-
         # The custom viet.pt detector was trained at 640.  Running it at 320
         # caused small signs to disappear before the detector feature maps.
         self.declare_parameter('imgsz', 640)
         self.declare_parameter('process_every_n_frames', 2)
         self.declare_parameter('sign_conf', DEFAULT_SIGN_CONF)
-        self.declare_parameter('light_conf', DEFAULT_LIGHT_CONF)
         self.declare_parameter('publish_image', False)
         self.declare_parameter('confirm_frames', 3)
-        self.declare_parameter('enable_light_model', True)
+        # Drop images older than this (s, by capture stamp); 0 disables.
+        self.declare_parameter('max_image_age', 0.5)
         self.declare_parameter('sign_model_file', 'viet.pt')
-        self.declare_parameter('light_model_file', 'traffic_light.pt')
         self.declare_parameter('camera_f',     CAMERA_PARAMS['f'])
         self.declare_parameter('camera_dy',    CAMERA_PARAMS['dy'])
         self.declare_parameter('camera_h',     CAMERA_PARAMS['h'])
         self.declare_parameter('camera_alpha', CAMERA_PARAMS['alpha'])
         self.declare_parameter('camera_v0',    CAMERA_PARAMS['v0'])
 
-        self.imgsz         = self.get_parameter('imgsz').value
+        self.imgsz = self.get_parameter('imgsz').value
         self.process_every = self.get_parameter('process_every_n_frames').value
-        self.sign_conf     = float(self.get_parameter('sign_conf').value)
-        self.light_conf    = float(self.get_parameter('light_conf').value)
+        self.sign_conf = float(self.get_parameter('sign_conf').value)
         self.confirm_frames = max(1, int(self.get_parameter('confirm_frames').value))
-        self.enable_light_model = bool(
-            self.get_parameter('enable_light_model').value)
+        self.max_image_age = float(self.get_parameter('max_image_age').value)
         self.sign_model_file = str(
             self.get_parameter('sign_model_file').value)
-        self.light_model_file = str(
-            self.get_parameter('light_model_file').value)
         self.candidate_label = 'none'
         self.candidate_count = 0
 
-        self.cam_f     = float(self.get_parameter('camera_f').value)
-        self.cam_dy    = float(self.get_parameter('camera_dy').value)
-        self.cam_h     = float(self.get_parameter('camera_h').value)
+        self.cam_f = float(self.get_parameter('camera_f').value)
+        self.cam_dy = float(self.get_parameter('camera_dy').value)
+        self.cam_h = float(self.get_parameter('camera_h').value)
         self.cam_alpha = float(self.get_parameter('camera_alpha').value)
-        self.cam_v0    = float(self.get_parameter('camera_v0').value)
-        self.a_y       = self.cam_f / self.cam_dy
+        self.cam_v0 = float(self.get_parameter('camera_v0').value)
+        self.a_y = self.cam_f / self.cam_dy
 
         self.frame_count = 0
 
         package_dir = get_package_share_directory('perception_pkg')
         sign_path = os.path.join(package_dir, self.sign_model_file)
-        light_path = os.path.join(package_dir, self.light_model_file)
 
         self.sign_uses_onnx = sign_path.lower().endswith('.onnx')
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -124,10 +104,7 @@ class TrafficSignNode(Node):
         try:
             from ultralytics import YOLO
             self.sign_model = YOLO(sign_path, task='detect')
-            self.light_model = (
-                YOLO(light_path, task='detect')
-                if self.enable_light_model else None)
-            self.get_logger().info('Models loaded successfully!')
+            self.get_logger().info('Sign model loaded successfully!')
         except Exception as e:
             self.get_logger().error(f'Failed to load model: {e}')
             raise
@@ -151,7 +128,7 @@ class TrafficSignNode(Node):
             self.get_logger().warn(f'Sign model cannot detect: {sorted(missing)}')
 
         self.label_pub = self.create_publisher(String,  '/perception/detected_label', 10)
-        self.dist_pub  = self.create_publisher(Float32, '/perception/sign_distance',  10)
+        self.dist_pub = self.create_publisher(Float32, '/perception/sign_distance',  10)
 
         qos = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -174,7 +151,7 @@ class TrafficSignNode(Node):
             return 'none', 0.0, None
 
         result = results[0]
-        boxes  = result.boxes
+        boxes = result.boxes
 
         if boxes is None or len(boxes) == 0:
             return 'none', 0.0, None
@@ -189,8 +166,8 @@ class TrafficSignNode(Node):
 
     def compute_distance(self, v_pixel: float) -> float:
         alpha_rad = math.radians(self.cam_alpha)
-        angle     = alpha_rad + math.atan2(v_pixel - self.cam_v0, self.a_y)
-        tan_val   = math.tan(angle)
+        angle = alpha_rad + math.atan2(v_pixel - self.cam_v0, self.a_y)
+        tan_val = math.tan(angle)
         if abs(tan_val) < 1e-6:
             return float('inf')
         d = self.cam_h / tan_val
@@ -202,9 +179,16 @@ class TrafficSignNode(Node):
         self.frame_count += 1
         if self.frame_count % self.process_every != 0:
             return
+        if self.max_image_age > 0.0:
+            age = image_age(self.get_clock().now(), Time.from_msg(msg.header.stamp))
+            if age is not None and not -self.max_image_age <= age <= self.max_image_age:
+                self.get_logger().error(
+                    f'Dropping camera image {age:+.2f} s old (limit {self.max_image_age} s)',
+                    throttle_duration_sec=2.0)
+                return
 
         np_arr = np.frombuffer(msg.data, np.uint8)
-        frame  = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         if frame is None:
             return
 
@@ -217,31 +201,10 @@ class TrafficSignNode(Node):
         if not self.sign_uses_onnx:
             sign_predict_args['device'] = self.device
         sign_results = self.sign_model.predict(frame, **sign_predict_args)
-        light_results = None
-        if self.light_model is not None:
-            light_results = self.light_model.predict(
-                frame, imgsz=self.imgsz, verbose=False, device=self.device)
 
-        sign_label, sign_conf, sign_v = self.decode_yolo_ultralytics(
+        label, conf, v_pixel = self.decode_yolo_ultralytics(
             sign_results, self.sign_class_map, self.sign_conf
         )
-        light_label, light_conf, light_v = self.decode_yolo_ultralytics(
-            light_results, LIGHT_CLASSES, self.light_conf
-        )
-
-        # Traffic lights take priority over signs
-        if light_label != 'none':
-            label   = light_label
-            conf    = light_conf
-            v_pixel = light_v
-        elif sign_label != 'none':
-            label   = sign_label
-            conf    = sign_conf
-            v_pixel = sign_v
-        else:
-            label   = 'none'
-            conf    = 0.0
-            v_pixel = None
 
         # Temporal confirmation prevents a single bad inference from changing
         # vehicle behaviour. A disappearance is published immediately so a
@@ -266,7 +229,7 @@ class TrafficSignNode(Node):
             distance = float('inf')
 
         # ✅ IMMEDIATE_LABELS → execute right away, distance=0.0
-        # Other labels (green_light) → log only, no execution
+        # Other labels → only once estimated within the execute threshold
         if label in IMMEDIATE_LABELS:
             effective_distance = 0.0
         elif distance <= DISTANCE_EXECUTE_THRESHOLD:
@@ -274,11 +237,11 @@ class TrafficSignNode(Node):
         else:
             effective_distance = distance
 
-        msg_out      = String()
+        msg_out = String()
         msg_out.data = f'{label}:{effective_distance:.3f}'
         self.label_pub.publish(msg_out)
 
-        dist_msg      = Float32()
+        dist_msg = Float32()
         dist_msg.data = distance if distance != float('inf') else -1.0
         self.dist_pub.publish(dist_msg)
 
@@ -295,16 +258,7 @@ class TrafficSignNode(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
-    node = TrafficSignNode()
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
+    run_node(TrafficSignNode, args=args)
 
 
 if __name__ == '__main__':

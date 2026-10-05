@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
-import rclpy
-
 from rclpy.node import Node
 from std_msgs.msg import String
 from interfaces_pkg.msg import Control
 
+from decision_pkg.shutdown import spin_then_stop
 
-STOP_LABELS  = {'red_light', 'stop'}
-SLOW_LABELS  = {'yellow_light', 'slow_down', 'speed_limit_20'}
-LEFT_LABELS  = {'turn_left'}
+
+STOP_LABELS = {'stop'}
+SLOW_LABELS = {'slow_down', 'speed_limit_20'}
+LEFT_LABELS = {'turn_left'}
 # The track has no right-turn sign. 'no_right_turn' means "do not turn right"
 # and must never arm a right turn.
 RIGHT_LABELS = set()
@@ -52,39 +52,39 @@ class TurnBehaviorNode(Node):
         # LOAD PARAMETERS
         # =========================================================
 
-        self.sign_timeout      = float(self.get_parameter('sign_timeout').value)
-        self.lane_timeout      = float(self.get_parameter('lane_timeout').value)
+        self.sign_timeout = float(self.get_parameter('sign_timeout').value)
+        self.lane_timeout = float(self.get_parameter('lane_timeout').value)
         self.approach_duration = float(self.get_parameter('approach_duration').value)
         self.approach_min_duration = float(
             self.get_parameter('approach_min_duration').value)
         self.intersection_confirm_needed = int(
             self.get_parameter('intersection_confirm_count').value)
         self.recovery_duration = float(self.get_parameter('recovery_duration').value)
-        self.approach_speed    = float(self.get_parameter('approach_speed').value)
-        self.turn_speed        = float(self.get_parameter('turn_speed').value)
-        self.min_speed         = float(self.get_parameter('min_speed').value)
-        self.slow_speed        = float(self.get_parameter('slow_speed').value)
-        self.sign_slow_speed   = float(self.get_parameter('sign_slow_speed').value)
-        self.turn_cooldown     = float(self.get_parameter('turn_cooldown').value)
-        self.stop_duration     = float(self.get_parameter('stop_duration').value)
-        self.slow_duration     = float(self.get_parameter('slow_duration').value)
+        self.approach_speed = float(self.get_parameter('approach_speed').value)
+        self.turn_speed = float(self.get_parameter('turn_speed').value)
+        self.min_speed = float(self.get_parameter('min_speed').value)
+        self.slow_speed = float(self.get_parameter('slow_speed').value)
+        self.sign_slow_speed = float(self.get_parameter('sign_slow_speed').value)
+        self.turn_cooldown = float(self.get_parameter('turn_cooldown').value)
+        self.stop_duration = float(self.get_parameter('stop_duration').value)
+        self.slow_duration = float(self.get_parameter('slow_duration').value)
 
         self.sign_confirm_needed = int(self.get_parameter('sign_confirm_count').value)
-        self.turn_duration       = float(self.get_parameter('turn_duration').value)
-        self.turn_min_duration   = float(
+        self.turn_duration = float(self.get_parameter('turn_duration').value)
+        self.turn_min_duration = float(
             self.get_parameter('turn_min_duration').value)
         self.lane_reacquire_needed = int(
             self.get_parameter('lane_reacquire_count').value)
-        self.left_turn_angle     = float(self.get_parameter('left_turn_angle').value)
-        self.right_turn_angle    = float(self.get_parameter('right_turn_angle').value)
+        self.left_turn_angle = float(self.get_parameter('left_turn_angle').value)
+        self.right_turn_angle = float(self.get_parameter('right_turn_angle').value)
 
         # =========================================================
         # LANE STATE
         # =========================================================
 
-        self.lane_speed    = 0.0
+        self.lane_speed = 0.0
         self.lane_steering = 0.0
-        self.lane_mode     = 'NO LANE'
+        self.lane_mode = 'NO LANE'
         self.intersection_count = 0
         self.lane_reacquire_count = 0
         self.last_lane_time = None
@@ -93,16 +93,16 @@ class TurnBehaviorNode(Node):
         # LABEL STATE
         # =========================================================
 
-        self.current_label    = 'none'
+        self.current_label = 'none'
         self.current_distance = float('inf')
-        self.execute_ready    = False
-        self.last_label_time  = self.now_sec()
+        self.execute_ready = False
+        self.last_label_time = self.now_sec()
 
         # =========================================================
         # SIGN ACTION
         # =========================================================
 
-        self.sign_action       = None
+        self.sign_action = None
         self.sign_action_start = None
         self.sign_action_label = None
         self.consumed_label = None
@@ -120,14 +120,14 @@ class TurnBehaviorNode(Node):
         # TURN STATE
         # =========================================================
 
-        self.pending_turn       = None
-        self.pending_since      = 0.0
+        self.pending_turn = None
+        self.pending_since = 0.0
 
-        self.active_turn             = None
-        self.active_turn_start       = 0.0
-        self.active_turn_phase       = None  # 'turning' | 'recovering'
+        self.active_turn = None
+        self.active_turn_start = 0.0
+        self.active_turn_phase = None  # 'turning' | 'recovering'
         self.active_turn_phase_start = 0.0
-        self.turn_saw_lane_loss      = False
+        self.turn_saw_lane_loss = False
 
         self.cooldown_until = 0.0
 
@@ -198,7 +198,7 @@ class TurnBehaviorNode(Node):
             except ValueError:
                 distance = float('inf')
         else:
-            label    = raw.lower()
+            label = raw.lower()
             distance = 0.0
 
         if not label:
@@ -207,16 +207,10 @@ class TurnBehaviorNode(Node):
         if label == 'none':
             return
 
-        # A green light explicitly releases a red-light stop.
-        if label == 'green_light' and self.sign_action_label == 'red_light':
-            self.sign_action = None
-            self.sign_action_start = None
-            self.sign_action_label = None
-
-        self.current_label    = label
+        self.current_label = label
         self.current_distance = distance
-        self.last_label_time  = now
-        self.execute_ready    = (distance == 0.0)
+        self.last_label_time = now
+        self.execute_ready = (distance == 0.0)
 
         # =========================================================
         # STOP / SLOW ACTION
@@ -225,12 +219,12 @@ class TurnBehaviorNode(Node):
         if (self.execute_ready and self.sign_action is None and
                 label != self.consumed_label):
             if label in STOP_LABELS:
-                self.sign_action       = 'stopping'
+                self.sign_action = 'stopping'
                 self.sign_action_start = now
                 self.sign_action_label = label
                 self.consumed_label = label
             elif label in SLOW_LABELS:
-                self.sign_action       = 'slowing'
+                self.sign_action = 'slowing'
                 self.sign_action_start = now
                 self.sign_action_label = label
                 self.consumed_label = label
@@ -260,9 +254,9 @@ class TurnBehaviorNode(Node):
                 self.turn_sign_label = label
 
             if self.turn_sign_count >= self.sign_confirm_needed:
-                direction            = 'left' if label in LEFT_LABELS else 'right'
-                self.pending_turn    = direction
-                self.pending_since   = now
+                direction = 'left' if label in LEFT_LABELS else 'right'
+                self.pending_turn = direction
+                self.pending_since = now
                 self.turn_sign_count = 0
                 self.turn_sign_label = None
                 self.get_logger().info(
@@ -280,9 +274,9 @@ class TurnBehaviorNode(Node):
 
     def lane_callback(self, msg: Control):
         self.last_lane_time = self.now_sec()
-        self.lane_speed    = float(msg.speed)
+        self.lane_speed = float(msg.speed)
         self.lane_steering = float(msg.steering)
-        self.lane_mode     = msg.message.strip().upper() or 'UNKNOWN'
+        self.lane_mode = msg.message.strip().upper() or 'UNKNOWN'
 
         if self.pending_turn is not None and self.lane_mode == 'NO LANE':
             self.intersection_count += 1
@@ -301,10 +295,10 @@ class TurnBehaviorNode(Node):
     # =============================================================
 
     def build_cmd(self, speed, steering, message):
-        cmd          = Control()
-        cmd.speed    = float(max(0.0, min(1.0, speed)))
+        cmd = Control()
+        cmd.speed = float(max(0.0, min(1.0, speed)))
         cmd.steering = float(steering)
-        cmd.message  = message
+        cmd.message = message
         return cmd
 
     # =============================================================
@@ -313,14 +307,14 @@ class TurnBehaviorNode(Node):
 
     def normal_lane_cmd(self):
 
-        now      = self.now_sec()
+        now = self.now_sec()
         steering = self.lane_steering
 
         if self.sign_action == 'stopping':
             elapsed = now - self.sign_action_start
-            if self.sign_action_label == 'red_light' or elapsed < self.stop_duration:
+            if elapsed < self.stop_duration:
                 return self.build_cmd(0.0, steering, 'STOP')
-            self.sign_action       = None
+            self.sign_action = None
             self.sign_action_start = None
             self.sign_action_label = None
 
@@ -331,7 +325,7 @@ class TurnBehaviorNode(Node):
                 # lane is lost, and a speed sign must not override that stop.
                 speed = min(self.lane_speed, self.sign_slow_speed)
                 return self.build_cmd(speed, steering, 'SLOW')
-            self.sign_action       = None
+            self.sign_action = None
             self.sign_action_start = None
             self.sign_action_label = None
 
@@ -371,7 +365,7 @@ class TurnBehaviorNode(Node):
             reason = 'lane reacquired' if lane_reacquired else 'turn timeout'
             self.get_logger().info(f'Finish turning phase: {reason}')
             # Chuyển sang recovery
-            self.active_turn_phase       = 'recovering'
+            self.active_turn_phase = 'recovering'
             self.active_turn_phase_start = now
 
         # Phase: recovering
@@ -381,10 +375,10 @@ class TurnBehaviorNode(Node):
 
         # Xong — quay lại bám làn
         self.get_logger().info(f'Turn complete: {self.active_turn}')
-        self.active_turn       = None
+        self.active_turn = None
         self.active_turn_phase = None
         self.turn_saw_lane_loss = False
-        self.cooldown_until    = now + self.turn_cooldown
+        self.cooldown_until = now + self.turn_cooldown
         return self.normal_lane_cmd()
 
     # =============================================================
@@ -452,14 +446,14 @@ class TurnBehaviorNode(Node):
             # START TURN
             # =====================================================
 
-            self.active_turn             = self.pending_turn
-            self.active_turn_start       = now
-            self.active_turn_phase       = 'turning'
+            self.active_turn = self.pending_turn
+            self.active_turn_start = now
+            self.active_turn_phase = 'turning'
             self.active_turn_phase_start = now
-            self.pending_turn            = None
-            self.intersection_count      = 0
-            self.lane_reacquire_count    = 0
-            self.turn_saw_lane_loss      = self.lane_mode == 'NO LANE'
+            self.pending_turn = None
+            self.intersection_count = 0
+            self.lane_reacquire_count = 0
+            self.turn_saw_lane_loss = self.lane_mode == 'NO LANE'
 
             reason = 'intersection detected' if intersection_ready else 'approach timeout'
             self.get_logger().info(
@@ -479,17 +473,10 @@ class TurnBehaviorNode(Node):
 # =============================================================
 
 def main(args=None):
-
-    rclpy.init(args=args)
-    node = TurnBehaviorNode()
-
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+    spin_then_stop(
+        TurnBehaviorNode,
+        lambda node: node.cmd_pub.publish(node.build_cmd(0.0, 0.0, 'DECISION_SHUTDOWN')),
+        args=args)
 
 
 if __name__ == '__main__':

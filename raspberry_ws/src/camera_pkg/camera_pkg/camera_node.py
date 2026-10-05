@@ -1,5 +1,8 @@
+import signal
+
 import rclpy
 from rclpy.node import Node
+from rclpy.signals import SignalHandlerOptions
 
 from sensor_msgs.msg import CompressedImage
 
@@ -102,24 +105,27 @@ class CameraPublisher(Node):
 
 
 def main(args=None):
+    # Ctrl+C reaches the node twice (terminal and ros2 launch). Handle the
+    # first signal here and ignore the rest, so the camera is always released.
+    rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
+    stop_requested = []
 
-    rclpy.init(args=args)
+    def on_signal(signum, frame):
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(sig, signal.SIG_IGN)
+        stop_requested.append(signum)
 
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, on_signal)
     node = CameraPublisher()
-
     try:
-        rclpy.spin(node)
-
-    except KeyboardInterrupt:
-        pass
-
+        while rclpy.ok() and not stop_requested:
+            rclpy.spin_once(node, timeout_sec=0.1)
     finally:
-
         node.cap.release()
-
         node.destroy_node()
-
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == '__main__':

@@ -1,6 +1,5 @@
 from setuptools import find_packages, setup
-import os  
-from glob import glob
+
 package_name = 'camera_pkg'
 
 setup(
@@ -15,9 +14,9 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='tuyen',
-    maintainer_email='tuyen@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer_email='nguyendangtuyen062004@gmail.com',
+    description='Camera capture and JPEG publishing on the Raspberry Pi',
+    license='Apache-2.0',
     extras_require={
         'test': [
             'pytest',

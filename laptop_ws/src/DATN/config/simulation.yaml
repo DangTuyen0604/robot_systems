@@ -12,6 +12,9 @@ sim_motor_bridge_node:
 
 lane_node_instance:
   ros__parameters:
+    # Gazebo stamps camera images with simulation time, not wall time, so
+    # their age cannot be checked. The MuJoCo launch re-enables the check.
+    max_image_age: 0.0
     lost_lane_recovery_enabled: true
     lost_lane_recovery_frames: 10
     lost_lane_recovery_max_frames: 30
@@ -20,16 +23,12 @@ lane_node_instance:
 
 sign_node_instance:
   ros__parameters:
+    max_image_age: 0.0
     imgsz: 320
     sign_conf: 0.5
-    light_conf: 0.8
     process_every_n_frames: 2
     confirm_frames: 3
     publish_image: false
-    # The current Gazebo world has traffic signs but no traffic lights. The
-    # sign detector is YOLOv8; disabling the separate YOLO11 light model keeps
-    # the simulation dependency set small and avoids unnecessary inference.
-    enable_light_model: false
     sign_model_file: yolov8n.onnx
     camera_f: 265.0
     camera_dy: 1.0

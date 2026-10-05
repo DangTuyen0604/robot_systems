@@ -1,20 +1,11 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.actions import DeclareLaunchArgument, LogInfo
-from launch.substitutions import LaunchConfiguration
+from launch.actions import LogInfo
 
 
 def generate_launch_description():
 
-    # ── Launch Arguments ──────────────────────────────────────────────────────
-    publish_image_arg = DeclareLaunchArgument(
-        'publish_image',
-        default_value='true',
-        description='Publish debug image topics. Đặt false khi deploy để tiết kiệm CPU'
-    )
-
     return LaunchDescription([
-        publish_image_arg,
         LogInfo(msg='=== Khởi động hệ thống robot ==='),
 
         # ── Node 1: Lane Detection (perception_pkg) ───────────────────────────
@@ -29,7 +20,7 @@ def generate_launch_description():
             }]
         ),
 
-        # ── Node 2: Traffic Sign + Light Detection (perception_pkg) ───────────
+        # ── Node 2: Traffic Sign Detection (perception_pkg) ──────────────────
         Node(
             package='perception_pkg',
             executable='traffic_sign_node',
@@ -37,10 +28,8 @@ def generate_launch_description():
             output='screen',
             parameters=[{
                 'sign_conf':     0.50,
-                'light_conf':    0.50,
                 'imgsz':         640,
                 'process_every_n_frames': 2,
-                'publish_image': LaunchConfiguration('publish_image'),
             }]
         ),
 
@@ -57,7 +46,7 @@ def generate_launch_description():
             }]
         ),
 
-        # ── rqt_image_view: cửa sổ xem ảnh debug ─────────────────────────────
+        # ── Node 4: Command mux (decision_pkg) ──────────────────────────────
         Node(
             package='decision_pkg',
             executable='command_mux_node',

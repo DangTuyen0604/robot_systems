@@ -15,8 +15,8 @@ from std_msgs.msg import String
 
 SPEED_STEP = 0.05
 STEER_STEP = 5.0
-MAX_SPEED  = 0.50
-MAX_STEER  = 45.0
+MAX_SPEED = 0.50
+MAX_STEER = 45.0
 
 BANNER = """
 ╔══════════════════════════════════╗
@@ -41,10 +41,10 @@ class TeleopMuxNode(Node):
         self.cmd_pub = self.create_publisher(Control, '/control/manual', 10)
         self.mode_pub = self.create_publisher(String, '/control/mode', 10)
 
-        self.mode      = 'ESTOP'
-        self.speed     = 0.0
-        self.steering  = 0.0
-        self._running  = True
+        self.mode = 'ESTOP'
+        self.speed = 0.0
+        self.steering = 0.0
+        self._running = True
 
         self.create_timer(0.05, self._publish)
 
@@ -59,16 +59,16 @@ class TeleopMuxNode(Node):
         if not self._running:
             return
         if self.mode == 'MANUAL':
-            cmd          = Control()
-            cmd.speed    = float(self.speed)
+            cmd = Control()
+            cmd.speed = float(self.speed)
             cmd.steering = float(self.steering)
-            cmd.message  = 'MANUAL'
+            cmd.message = 'MANUAL'
             self.cmd_pub.publish(cmd)
 
     # ----------------------------------------------------------------
     def _key_loop(self):
         """Đọc bàn phím — raw mode bật 1 lần, giữ suốt vòng lặp."""
-        fd       = sys.stdin.fileno()
+        fd = sys.stdin.fileno()
         old_attr = termios.tcgetattr(fd)
         tty.setraw(fd)                     # raw mode: bật 1 lần duy nhất
         try:
@@ -105,8 +105,8 @@ class TeleopMuxNode(Node):
         # --- Chuyển chế độ ---
         if key == '\t':
             if self.mode == 'ESTOP':
-                self.mode     = 'MANUAL'
-                self.speed    = 0.0
+                self.mode = 'MANUAL'
+                self.speed = 0.0
                 self.steering = 0.0
             elif self.mode == 'MANUAL':
                 self.mode = 'AUTO'
@@ -140,7 +140,7 @@ class TeleopMuxNode(Node):
         elif key in ('d', 'D', '\x1b[C'):
             self.steering = min(self.steering + STEER_STEP, MAX_STEER)
         elif key == ' ':
-            self.speed    = 0.0
+            self.speed = 0.0
             self.steering = 0.0
 
         self._print_state()
@@ -149,8 +149,8 @@ class TeleopMuxNode(Node):
     def _print_state(self):
         if self.mode == 'MANUAL':
             bar = int(self.speed / MAX_SPEED * 20)
-            print(f'\r  [MANUAL]  spd=[{"#"*bar:<20}]{self.speed:.2f}  steer={self.steering:+.0f}deg  ',
-                  end='', flush=True)
+            print(f'\r  [MANUAL]  spd=[{"#"*bar:<20}]{self.speed:.2f}  '
+                  f'steer={self.steering:+.0f}deg  ', end='', flush=True)
         else:
             print(f'\r  [{self.mode:<6}]  speed=0.00                    ',
                   end='', flush=True)

@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    container: ros:humble
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      # No GPU on the runners: MuJoCo renders the robot camera in software.
+      MUJOCO_GL: osmesa
+      PYOPENGL_PLATFORM: osmesa
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System packages
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            python3-pip python3-venv libosmesa6 libgl1 \
+            ros-humble-ament-lint-auto ros-humble-ament-lint-common \
+            ros-humble-ament-cmake-pytest
+
+      - name: Python environment
+        run: |
+          python3 -m venv --system-site-packages .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install \
+            -r requirements-laptop.txt -r requirements-raspberry.txt pytest
+
+      - name: Detector weights
+        run: python3 scripts/fetch_models.py
+
+      - name: Repository consistency checks
+        run: .venv/bin/python -m pytest -q tests
+
+      - name: Laptop workspace - build
+        run: |
+          source /opt/ros/humble/setup.bash
+          cd laptop_ws
+          ../.venv/bin/python -m colcon build --symlink-install
+
+      - name: Laptop workspace - unit tests and linters
+        run: |
+          source /opt/ros/humble/setup.bash
+          cd laptop_ws
+          source install/setup.bash
+          ../.venv/bin/python -m colcon test --event-handlers console_cohesion+
+          ../.venv/bin/python -m colcon test-result --verbose
+
+      - name: Raspberry Pi workspace - build, unit tests and linters
+        run: |
+          source /opt/ros/humble/setup.bash
+          cd raspberry_ws
+          ../.venv/bin/python -m colcon build --symlink-install
+          source install/setup.bash
+          ../.venv/bin/python -m colcon test --event-handlers console_cohesion+
+          ../.venv/bin/python -m colcon test-result --verbose
+
+      - name: MuJoCo scenario tests
+        # Software rendering on shared runners has not been verified yet;
+        # drop continue-on-error once this step has passed on GitHub.
+        continue-on-error: true
+        env:
+          MUJOCO_SCENARIO: '1'
+        run: |
+          source /opt/ros/humble/setup.bash
+          cd laptop_ws
+          source install/setup.bash
+          ../.venv/bin/python -m pytest -v src/mujoco_sim_pkg/test/test_scenario.py

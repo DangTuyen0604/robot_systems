@@ -3,21 +3,20 @@
 <package format="3">
   <name>perception_pkg</name>
   <version>0.0.0</version>
-  <description>Gói xử lý ảnh Lane Detection (FastSCNN) và Traffic Sign (YOLOv8) tối ưu GPU</description>
-  <maintainer email="tuyen@todo.todo">tuyen</maintainer>
+  <description>Lane detection (OpenCV) and traffic-sign detection (YOLOv8 via ONNX Runtime)</description>
+  <maintainer email="nguyendangtuyen062004@gmail.com">tuyen</maintainer>
   <license>Apache-2.0</license>
 
   <!-- Các gói phụ thuộc cốt lõi của ROS2 -->
   <depend>rclpy</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
-  <depend>cv_bridge</depend>
   <depend>ament_index_python</depend>
   
   <!-- Gói custom chứa định dạng thông điệp Control của hệ thống -->
   <depend>interfaces_pkg</depend>
 
-  <!-- Khai báo thư viện Python bên thứ ba chạy trên GPU -->
+  <!-- Python packages; torch, ultralytics and onnxruntime come from requirements-laptop.txt. -->
   <exec_depend>python3-torch</exec_depend>
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-opencv</exec_depend>

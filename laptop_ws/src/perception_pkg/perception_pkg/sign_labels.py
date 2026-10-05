@@ -21,7 +21,8 @@ def normalize_label(name):
 
 
 def build_class_map(model_names, fallback, allowed):
-    """Return ``(class_map, source)`` mapping class id to an allowed label.
+    """
+    Return ``(class_map, source)`` mapping class id to an allowed label.
 
     Names stored in the loaded model take priority, so the mapping always
     follows the model on disk. The hard-coded ``fallback`` is used only when

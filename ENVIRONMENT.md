@@ -95,22 +95,34 @@ export ROS_LOCALHOST_ONLY=0
 ```
 
 For repeatability, store these values in a dedicated robot environment script,
-not in source files. Synchronize time on both devices with systemd-timesyncd or
-chrony.
+not in source files.
+
+Synchronize time on both devices with systemd-timesyncd or chrony. This is
+required: the lane and sign nodes drop camera images whose capture stamp is
+more than `max_image_age` (0.5 s) away from the laptop clock, so a clock offset
+larger than that stops the robot and logs `Dropping camera image ... synchronise
+clocks`. Check the offset with `chronyc tracking` or `timedatectl
+timesync-status` on both machines. Set `max_image_age: 0.0` only to rule the
+check out while debugging.
 
 ## Production models
 
-Only these files are loaded by `traffic_sign_node.py`:
+Fetch and verify the weights from the GitHub release `models-v1` with
+`python3 scripts/fetch_models.py`, then rebuild `laptop_ws`. Weights are never
+committed; publish a new release (for example `models-v2`) and update
+`MODELS` and `RELEASE_URL` in the script when they change.
+
+`traffic_sign_node.py` loads a single traffic-sign detector; the system has no
+traffic-light model.
 
 | Purpose | File | SHA-256 |
 |---|---|---|
-| Traffic signs | `viet.pt` | `eeab84b4ef1c5818417bb34abaac237c95857449b57de66cbf432267caaef8f7` |
-| Traffic lights | `traffic_light.pt` | `360fbc9e8f87c222a5b52b39eead63e04ddcbc2984f2d795087b4a57904a3d94` |
+| Traffic signs (robot) | `viet.pt` | `eeab84b4ef1c5818417bb34abaac237c95857449b57de66cbf432267caaef8f7` |
 
-`viet.pt` is the source YOLOv8 traffic-sign checkpoint. The current Gazebo
-world contains no traffic lights, so `simulation.yaml` disables the
-separate YOLO11 `traffic_light.pt` model. Enable it only with an Ultralytics
-release that provides the `C3k2` layer.
+`viet.pt` is the source YOLOv8 traffic-sign checkpoint. Its class names are
+Vietnamese (`cam_re_phai`, `di_cham`, `dung_lai`, `re_trai`,
+`toc_do_toi_da_20`); `perception_pkg/sign_labels.py` maps them to the labels
+the decision node uses.
 
 For stable CPU inference, simulation executes the exported
 `yolov8n.onnx` model through ONNX Runtime. Its SHA-256 is
@@ -120,10 +132,9 @@ simulation runtime path.
 The ONNX graph has a fixed `320x320` input; keep the simulation `imgsz`
 parameter at 320 unless the model is exported again with dynamic shapes.
 
-The other weight files are experiments and should be moved to an external model
-registry after their provenance has been checked. Do not delete them solely by
-filename. Store production weights with Git LFS or an artifact registry and
-verify their hashes before deployment.
+Experimental weights from earlier development (`yolov8n_2.*`, `yolov11n.onnx`,
+`lane_best.pt`, `traffic_light*`, ...) were removed from the repository history;
+no node uses them.
 
 ## Clean rebuild
 

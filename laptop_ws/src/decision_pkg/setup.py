@@ -14,9 +14,10 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='tuyen',
-    maintainer_email='tuyen@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer_email='nguyendangtuyen062004@gmail.com',
+    description=(
+        'Sign behaviour, fail-safe command mux, keyboard teleop and simulation motor bridge'),
+    license='Apache-2.0',
     extras_require={
         'test': [
             'pytest',

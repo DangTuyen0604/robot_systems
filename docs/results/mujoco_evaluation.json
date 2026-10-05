@@ -1,0 +1,71 @@
+{
+  "signs": true,
+  "duration": 150.0,
+  "runs": [
+    {
+      "duration": 60.959437370999694,
+      "finish_time_s": 55.47924462799983,
+      "stem_mean_error_mm": 0.9012474143207374,
+      "stem_max_error_mm": 10.780370072132504,
+      "branch_mean_error_mm": 5.225907737307532,
+      "branch_max_error_mm": 34.24588365428982,
+      "kept_lane": true,
+      "took_left_branch": true,
+      "completed": true,
+      "stop_hold_s": 4.900638895999691,
+      "slow_hold_s": 4.974530769000012
+    },
+    {
+      "duration": 55.96145533000072,
+      "finish_time_s": 50.50365129800048,
+      "stem_mean_error_mm": 0.9140698641332272,
+      "stem_max_error_mm": 10.866710942585577,
+      "branch_mean_error_mm": 5.691504712097981,
+      "branch_max_error_mm": 35.64298531714405,
+      "kept_lane": true,
+      "took_left_branch": true,
+      "completed": true,
+      "stop_hold_s": 4.905821925999589,
+      "slow_hold_s": 4.979607812000722
+    },
+    {
+      "duration": 56.09844953500033,
+      "finish_time_s": 50.59859889499967,
+      "stem_mean_error_mm": 0.9824777545767827,
+      "stem_max_error_mm": 10.911737382616218,
+      "branch_mean_error_mm": 5.811920127225666,
+      "branch_max_error_mm": 35.33334491646922,
+      "kept_lane": true,
+      "took_left_branch": true,
+      "completed": true,
+      "stop_hold_s": 4.900325826999506,
+      "slow_hold_s": 4.967002506999961
+    },
+    {
+      "duration": 61.01674095599992,
+      "finish_time_s": 55.516633588999866,
+      "stem_mean_error_mm": 1.0467514075673583,
+      "stem_max_error_mm": 11.240782521852402,
+      "branch_mean_error_mm": 4.877819321144988,
+      "branch_max_error_mm": 34.606951674916786,
+      "kept_lane": true,
+      "took_left_branch": true,
+      "completed": true,
+      "stop_hold_s": 4.899732896999922,
+      "slow_hold_s": 4.977711659000306
+    },
+    {
+      "duration": 55.976563978999366,
+      "finish_time_s": 50.49944211899947,
+      "stem_mean_error_mm": 1.0021574163101525,
+      "stem_max_error_mm": 10.969813937362064,
+      "branch_mean_error_mm": 5.5793016634639665,
+      "branch_max_error_mm": 34.30529536787774,
+      "kept_lane": true,
+      "took_left_branch": true,
+      "completed": true,
+      "stop_hold_s": 4.901049354999486,
+      "slow_hold_s": 4.980010106000009
+    }
+  ]
+}

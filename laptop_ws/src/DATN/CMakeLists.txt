@@ -21,6 +21,9 @@ if(BUILD_TESTING)
   # comment the line when this package is in a git repo and when
   # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
+  # ROS package names must be lower case, so xmllint rejects "DATN". The name
+  # is kept because every launch command (ros2 launch DATN ...) uses it.
+  set(ament_cmake_xmllint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
   ament_add_pytest_test(simulation_configuration
     test/test_simulation_configuration.py

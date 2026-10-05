@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Fail-safe command multiplexer for autonomous and manual control."""
 
-import rclpy
 from interfaces_pkg.msg import Control
 from rclpy.node import Node
 from std_msgs.msg import String
+
+from decision_pkg.shutdown import spin_then_stop
 
 
 def select_command(mode, commands, received_at, now, timeout):
@@ -84,17 +85,10 @@ class CommandMuxNode(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
-    node = CommandMuxNode()
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.cmd_pub.publish(node._stop('MUX_SHUTDOWN'))
-        node.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
+    spin_then_stop(
+        CommandMuxNode,
+        lambda node: node.cmd_pub.publish(node._stop('MUX_SHUTDOWN')),
+        args=args)
 
 
 if __name__ == '__main__':

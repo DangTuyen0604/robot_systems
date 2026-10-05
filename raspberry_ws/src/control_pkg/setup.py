@@ -14,9 +14,9 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='tuyen',
-    maintainer_email='tuyen@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer_email='nguyendangtuyen062004@gmail.com',
+    description='Serial bridge to the Arduino motor controller with command watchdog',
+    license='Apache-2.0',
     extras_require={
         'test': [
             'pytest',
@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'motor_node = control_pkg.motor_node:main',
+            'encoder_rate = control_pkg.encoder_rate:main',
         ],
     },
 )

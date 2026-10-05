@@ -4,8 +4,8 @@
   <name>mujoco_sim_pkg</name>
   <version>0.0.0</version>
   <description>MuJoCo simulation of the DATN track and robot</description>
-  <maintainer email="tuyen@todo.todo">tuyen</maintainer>
-  <license>TODO: License declaration</license>
+  <maintainer email="nguyendangtuyen062004@gmail.com">tuyen</maintainer>
+  <license>Apache-2.0</license>
 
   <depend>rclpy</depend>
   <depend>geometry_msgs</depend>
