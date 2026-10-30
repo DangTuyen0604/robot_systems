@@ -107,9 +107,9 @@ check out while debugging.
 
 ## Production models
 
-Fetch and verify the weights from the GitHub release `models-v1` with
+Fetch and verify the weights from the GitHub release `models-v2` with
 `python3 scripts/fetch_models.py`, then rebuild `laptop_ws`. Weights are never
-committed; publish a new release (for example `models-v2`) and update
+committed; publish a new release (for example `models-v3`) and update
 `MODELS` and `RELEASE_URL` in the script when they change.
 
 `traffic_sign_node.py` loads a single traffic-sign detector; the system has no
@@ -118,19 +118,27 @@ traffic-light model.
 | Purpose | File | SHA-256 |
 |---|---|---|
 | Traffic signs (robot) | `viet.pt` | `eeab84b4ef1c5818417bb34abaac237c95857449b57de66cbf432267caaef8f7` |
+| Traffic signs (simulation) | `viet_320.onnx` | `28b9f86995812745035d578bba3ffac8028bdd05de7e1f3d0f9f73e2f0f9db83` |
 
 `viet.pt` is the source YOLOv8 traffic-sign checkpoint. Its class names are
 Vietnamese (`cam_re_phai`, `di_cham`, `dung_lai`, `re_trai`,
 `toc_do_toi_da_20`); `perception_pkg/sign_labels.py` maps them to the labels
 the decision node uses.
 
-For stable CPU inference, simulation executes the exported
-`yolov8n.onnx` model through ONNX Runtime. Its SHA-256 is
-`6bd6b0deb7671c10754cd7df8b85fb43689f9830435a2c7d8cc9353980b2b026`.
-The `.pt` file is retained as the source checkpoint and is not used in the
-simulation runtime path.
+Simulation runs `viet_320.onnx`, `viet.pt` exported to ONNX at 320 px, through
+ONNX Runtime. Its SHA-256 is
+`28b9f86995812745035d578bba3ffac8028bdd05de7e1f3d0f9f73e2f0f9db83`.
+Its raw outputs match the PyTorch checkpoint to within 0.001 px (boxes) and
+1e-5 (class scores). On the 321 test images of the training dataset (Roboflow
+`datn-stoh6` version 9), mAP@50 is 0.993 for `viet_320.onnx` and 0.994 for
+`viet.pt` at 640 px; mAP@50-95 drops from 0.981 to 0.965.
 The ONNX graph has a fixed `320x320` input; keep the simulation `imgsz`
 parameter at 320 unless the model is exported again with dynamic shapes.
+Re-export with:
+
+```bash
+yolo export model=viet.pt format=onnx imgsz=320 simplify=False
+```
 
 Experimental weights from earlier development (`yolov8n_2.*`, `yolov11n.onnx`,
 `lane_best.pt`, `traffic_light*`, ...) were removed from the repository history;

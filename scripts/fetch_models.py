@@ -18,13 +18,13 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 DEST = ROOT / 'laptop_ws' / 'src' / 'perception_pkg' / 'perception_pkg'
-RELEASE_URL = 'https://github.com/DangTuyen0604/robot_systems/releases/download/models-v1/'
+RELEASE_URL = 'https://github.com/DangTuyen0604/robot_systems/releases/download/models-v2/'
 
 # name: (sha256, purpose)
 MODELS = {
-    'yolov8n.onnx': (
-        '6bd6b0deb7671c10754cd7df8b85fb43689f9830435a2c7d8cc9353980b2b026',
-        'sign detector, ONNX 320 px (simulation)'),
+    'viet_320.onnx': (
+        '28b9f86995812745035d578bba3ffac8028bdd05de7e1f3d0f9f73e2f0f9db83',
+        'sign detector, viet.pt exported to ONNX at 320 px (simulation)'),
     'viet.pt': (
         'eeab84b4ef1c5818417bb34abaac237c95857449b57de66cbf432267caaef8f7',
         'sign detector, PyTorch checkpoint (real robot)'),

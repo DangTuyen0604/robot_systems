@@ -100,8 +100,8 @@ python -m pip install -r requirements-laptop.txt
 ### 2. Cung cấp mô hình nhận diện
 
 Trọng số không nằm trong Git mà ở
-[GitHub Release `models-v1`](https://github.com/DangTuyen0604/robot_systems/releases/tag/models-v1).
-Script sau tải `yolov8n.onnx` (mô phỏng) và `viet.pt` (xe thật) vào
+[GitHub Release `models-v2`](https://github.com/DangTuyen0604/robot_systems/releases/tag/models-v2).
+Script sau tải `viet_320.onnx` (mô phỏng, bản ONNX 320 px của `viet.pt`) và `viet.pt` (xe thật) vào
 `laptop_ws/src/perception_pkg/perception_pkg/` và kiểm tra SHA-256:
 
 ```bash
@@ -334,13 +334,16 @@ mỗi lượt tới khi xe dừng ở cuối đường. Sai số đo từ vị t
 | Chỉ số | Kết quả |
 |---|---|
 | Hoàn thành tuyến (giữ làn, rẽ trái đúng nhánh, tới cuối đường) | 5/5 |
-| Thời gian hoàn thành | 52,5 ± 2,4 s |
+| Thời gian hoàn thành | 50,9 ± 0,1 s |
 | Sai số tâm làn đoạn thẳng: trung bình / lớn nhất | 1,0 / 11,0 mm |
-| Sai số tâm làn nhánh trái: trung bình / lớn nhất | 5,4 / 34,8 mm |
-| Đi chậm ở biển 20 km/h | 5,0 s (cấu hình 5 s) |
+| Sai số tâm làn nhánh trái: trung bình / lớn nhất | 5,4 / 36,1 mm |
+| Đi chậm ở biển 20 km/h, trong đoạn y 0,6–1,5 m | 3,7 ± 0,3 s (cấu hình 5 s) |
 | Dừng ở biển STOP | 4,9 s (cấu hình 5 s) |
 
 Sai số lớn nhất ở nhánh trái xuất hiện ngay sau khúc rẽ, khi xe bắt lại làn.
+Thời gian đi chậm chỉ được đếm trong đoạn y 0,6–1,5 m. `viet_320.onnx` nhận ra
+biển 20 sớm hơn model mô phỏng trước đó, nên xe bắt đầu chậm từ khoảng
+y = 0,55 m; đo trên cả tuyến, xe vẫn chậm đủ 5,0 s.
 Tái lập bằng `ros2 run mujoco_sim_pkg evaluate --runs 5`.
 
 ### Tốc độ xử lý perception
@@ -351,9 +354,9 @@ trong node ROS ([chi tiết](docs/results/perception_benchmark.md); tái lập b
 
 | Bước | Trung bình | p95 | Tối đa |
 |---|---|---|---|
-| Bám làn (OpenCV) + điều khiển | 4,8 ms | 5,1 ms | ~210 FPS |
-| Biển báo `yolov8n.onnx` 320 px (mô phỏng) | 23,5 ms | 30,0 ms | ~42 FPS |
-| Biển báo `viet.pt` 640 px (xe thật) | 50,2 ms | 51,9 ms | ~20 FPS |
+| Bám làn (OpenCV) + điều khiển | 4,9 ms | 5,4 ms | ~205 FPS |
+| Biển báo `viet_320.onnx` 320 px (mô phỏng) | 24,8 ms | 31,8 ms | ~40 FPS |
+| Biển báo `viet.pt` 640 px (xe thật) | 53,1 ms | 56,3 ms | ~19 FPS |
 
 Node biển báo xử lý 1/2 số ảnh của camera 20 FPS, nên mỗi lần suy luận có 100 ms;
 cả hai model đều nằm trong giới hạn này trên CPU.

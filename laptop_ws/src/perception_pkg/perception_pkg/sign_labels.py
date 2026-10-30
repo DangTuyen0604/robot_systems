@@ -4,8 +4,8 @@
 # treated as "no sign", so an unused class can never trigger a behaviour.
 ACTIVE_SIGN_LABELS = frozenset({'turn_left', 'speed_limit_20', 'stop'})
 
-# The production detectors (yolov8n.onnx, viet.pt) store Vietnamese class
-# names; the rest of the system uses these English labels.
+# The production detectors (viet.pt and its ONNX export viet_320.onnx) store
+# Vietnamese class names; the rest of the system uses these English labels.
 LABEL_ALIASES = {
     'cam_re_phai': 'no_right_turn',
     'di_cham': 'slow_down',

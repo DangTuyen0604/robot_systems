@@ -25,7 +25,7 @@ MAX_DURATION = 240.0
 def sign_model_installed():
     from ament_index_python.packages import get_package_share_directory
     share = get_package_share_directory('perception_pkg')
-    return os.path.exists(os.path.join(share, 'yolov8n.onnx'))
+    return os.path.exists(os.path.join(share, 'viet_320.onnx'))
 
 
 def run(signs, tmp_path):
@@ -47,7 +47,7 @@ def test_lane_following_takes_the_left_branch(tmp_path):
 
 @pytest.mark.skipif(
     not os.environ.get('AMENT_PREFIX_PATH') or not sign_model_installed(),
-    reason='yolov8n.onnx not installed (run scripts/fetch_models.py)')
+    reason='viet_320.onnx not installed (run scripts/fetch_models.py)')
 def test_signs_turn_slow_and_stop(tmp_path):
     m = run(signs=True, tmp_path=tmp_path)
     assert m.kept_lane, m

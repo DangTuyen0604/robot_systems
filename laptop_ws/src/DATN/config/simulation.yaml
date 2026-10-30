@@ -29,7 +29,7 @@ sign_node_instance:
     process_every_n_frames: 2
     confirm_frames: 3
     publish_image: false
-    sign_model_file: yolov8n.onnx
+    sign_model_file: viet_320.onnx
     camera_f: 265.0
     camera_dy: 1.0
     camera_h: 0.26

@@ -6,7 +6,7 @@ Time the perception pipeline per frame on a folder of camera images.
 
 Stages: JPEG decode, lane detection + control (640x480 internally), and
 sign detection with each model given by --model FILE:IMGSZ (default the
-simulation model, yolov8n.onnx at 320 px). Frames are processed one by one
+simulation model, viet_320.onnx at 320 px). Frames are processed one by one
 in a single thread, like the ROS nodes do.
 """
 
@@ -66,10 +66,10 @@ def main(args=None):
     parser.add_argument('--images', required=True, help='folder of .jpg frames')
     parser.add_argument('--model', action='append', default=None,
                         help='sign model as FILE:IMGSZ, repeatable '
-                             '(default yolov8n.onnx:320)')
+                             '(default viet_320.onnx:320)')
     parser.add_argument('--output', help='write <output>.md')
     args = parser.parse_args(args)
-    models = args.model or ['yolov8n.onnx:320']
+    models = args.model or ['viet_320.onnx:320']
 
     paths = sorted(glob.glob(os.path.join(args.images, '*.jpg')))
     if not paths:
