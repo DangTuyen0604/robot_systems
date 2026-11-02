@@ -64,9 +64,6 @@ jobs:
           ../.venv/bin/python -m colcon test-result --verbose
 
       - name: MuJoCo scenario tests
-        # Software rendering on shared runners has not been verified yet;
-        # drop continue-on-error once this step has passed on GitHub.
-        continue-on-error: true
         env:
           MUJOCO_SCENARIO: '1'
         run: |
